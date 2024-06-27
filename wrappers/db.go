@@ -17,18 +17,17 @@ type Resource struct {
 	gorm.Model
 	Name    string
 	Schema  string
-	Version string // Current Haven version.
+	Version uint
 }
 
 // ResourceVersions table stores how the schema has evolved over time. It also references
 // the payload that triggered the new version.
 type ResourceVersions struct {
-	Version             string `gorm:"primaryKey"`
+	Version             uint `gorm:"primaryKey"`
 	ResourceID          uint
 	ReferencePayloadsID uint
 	OldSchema           string
 	NewSchema           string
-	Diffs               string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	DeletedAt           gorm.DeletedAt `gorm:"index"`
