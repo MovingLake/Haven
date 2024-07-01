@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"movinglake.com/haven/lib"
+	"movinglake.com/haven/handler"
 	"movinglake.com/haven/wrappers"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	// Create DB connection.
 	db, err := wrappers.NewDB(dbStr)
 
-	handler := lib.NewHavenHandler(db)
+	handler := handler.NewHavenHandler(db)
 
 	r := gin.Default()
 	handler.RegisterRoutes(r)

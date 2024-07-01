@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"movinglake.com/haven/lib/jsonutils"
+	"movinglake.com/haven/handler/jsonutils"
 	"movinglake.com/haven/wrappers"
 )
 
@@ -23,24 +23,32 @@ func NewHavenHandler(db wrappers.DB) *HavenHandler {
 	}
 }
 
-func (h *HavenHandler) Router(c *gin.Context) {
+// APIRouter is the main entry point for the API.
+// We use RPCs to interact with the API. So all requests are POSTs and errors are returned as JSON.
+// We always return a status 200.
+func (h *HavenHandler) APIRouter(c *gin.Context) {
 	var payload map[string]interface{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	if v, ok := payload["action"]; !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no action specified"})
+		c.JSON(http.StatusOK, gin.H{"error": "no action specified"})
 		return
 	} else {
 		switch v {
 		case "addPayload":
 			if err := h.addPayload(payload); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+				return
+			}
+		case "validatePayload":
+			if err := h.addPayload(payload); err != nil {
+				c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 				return
 			}
 		default:
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown action " + v.(string)})
+			c.JSON(http.StatusOK, gin.H{"error": "unknown action " + v.(string)})
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "ok"})
@@ -108,12 +116,39 @@ func (h *HavenHandler) addPayload(p map[string]interface{}) error {
 	return nil
 }
 
+// validatePayload validates the payload against the schema.
+func (h *HavenHandler) validatePayload(p map[string]any) error {
+	resource := p["resource"].(string)
+	payload := p["payload"]
+
+	// Get the schema of the resource.
+	res, err := h.db.GetResource(resource)
+	if err != nil {
+		return fmt.Errorf("failed to get resource from db: %w", err)
+	}
+
+	schema := make(map[string]any)
+	if err := json.Unmarshal([]byte(res.Schema), &schema); err != nil {
+		return err
+	}
+
+	result, err := jsonutils.ValidatePayload(schema, payload)
+	if err != nil {
+		return err
+	}
+	if !result.Valid() {
+		return fmt.Errorf("payload is invalid: %v", result.Errors())
+	}
+
+	return nil
+}
+
 func (h *HavenHandler) RegisterRoutes(e *gin.Engine) error {
 	e.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "OK",
 		})
 	})
-	e.POST("/api/v1", h.Router)
+	e.POST("/api/v1", h.APIRouter)
 	return nil
 }
