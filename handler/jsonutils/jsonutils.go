@@ -8,13 +8,9 @@ import (
 	"github.com/andres-movl/gojsonschema"
 )
 
-type JObject map[string]any
-type JArray []any
-type J any
-
 // ArraySchema returns the schema for an array.
-func ArraySchema(payload JArray) JObject {
-	schema := JObject{
+func ArraySchema(payload []any) map[string]any {
+	schema := map[string]any{
 		"type": "array",
 	}
 	if len(payload) == 0 {
@@ -28,23 +24,23 @@ func ArraySchema(payload JArray) JObject {
 	if len(types) == 1 {
 		typ := TypeOf(payload[0])
 		if typ == "object" {
-			sch := ObjectSchema(payload[0].(JObject))
+			sch := ObjectSchema(payload[0].(map[string]any))
 			schema["items"] = sch
 			return schema
 		}
 		if typ == "array" {
-			sch := ArraySchema(payload[0].(JArray))
+			sch := ArraySchema(payload[0].([]any))
 			schema["items"] = sch
 			return schema
 		}
-		schema["items"] = JObject{
+		schema["items"] = map[string]any{
 			"type": typ,
 		}
 		return schema
 	}
 	// This is a mixed typed array.
-	schema["items"] = JObject{
-		"anyOf": JArray{},
+	schema["items"] = map[string]any{
+		"anyOf": []any{},
 	}
 	sortedKeys := []string{}
 	for k := range types {
@@ -56,7 +52,7 @@ func ArraySchema(payload JArray) JObject {
 		if k == "array" || k == "object" {
 			panic("can't handle arrays with mixed nested types")
 		}
-		schema["items"].(JObject)["anyOf"] = append(schema["items"].(JObject)["anyOf"].(JArray), JObject{
+		schema["items"].(map[string]any)["anyOf"] = append(schema["items"].(map[string]any)["anyOf"].([]any), map[string]any{
 			"type": k,
 		})
 	}
@@ -64,48 +60,50 @@ func ArraySchema(payload JArray) JObject {
 }
 
 // ObjectSchema returns the schema for an object.
-func ObjectSchema(payload JObject) JObject {
-	schema := JObject{
+func ObjectSchema(payload map[string]any) map[string]any {
+	schema := map[string]any{
 		"type":       "object",
-		"properties": JObject{},
+		"properties": map[string]any{},
 		"required":   []string{},
 	}
 	for k, v := range payload {
 		typ := TypeOf(v)
 		schema["required"] = append(schema["required"].([]string), k)
 		if typ == "object" {
-			sch := ObjectSchema(v.(JObject))
-			schema["properties"].(JObject)[k] = sch
+			sch := ObjectSchema(v.(map[string]any))
+			schema["properties"].(map[string]any)[k] = sch
 			continue
 		}
 		if typ == "array" {
-			sch := ArraySchema(v.(JArray))
-			schema["properties"].(JObject)[k] = sch
+			sch := ArraySchema(v.([]any))
+			schema["properties"].(map[string]any)[k] = sch
 			continue
 		}
-		schema["properties"].(JObject)[k] = JObject{
+		schema["properties"].(map[string]any)[k] = map[string]any{
 			"type": typ,
 		}
 	}
+	// Sort the required properties.
+	sort.Strings(schema["required"].([]string))
 	return schema
 }
 
 // CreateSchema creates a new schema from the payload.
-func CreateSchema(payload J) JObject {
-	schema := JObject{
+func CreateSchema(payload any, resourceName string) map[string]any {
+	schema := map[string]any{
 		"$schema":              "https://json-schema.org/draft/2020-12/schema",
 		"$id":                  "https://movinglake.com/haven.schema.json",
-		"title":                "",
+		"title":                resourceName,
 		"additionalProperties": false, // Very important.
 	}
 	typ := TypeOf(payload)
-	genSchema := JObject{}
+	genSchema := map[string]any{}
 	if typ == "object" {
-		genSchema = ObjectSchema(payload.(JObject))
+		genSchema = ObjectSchema(payload.(map[string]any))
 	} else if typ == "array" {
-		genSchema = ArraySchema(payload.(JArray))
+		genSchema = ArraySchema(payload.([]any))
 	} else {
-		genSchema["properties"] = JObject{
+		genSchema["properties"] = map[string]any{
 			"type": typ,
 		}
 	}
@@ -143,7 +141,7 @@ func TypeOf(v any) string {
 }
 
 // ExpandSchema expands the old schema with the payload.
-func ExpandSchema(schema JObject, payload J, errors []gojsonschema.ResultError) error {
+func ExpandSchema(schema map[string]any, payload any, errors []gojsonschema.ResultError) error {
 	for _, e := range errors {
 		fmt.Printf("Error. Type: %s, Details: %v\n", e.Type(), e.Details())
 		switch e.Type() {
@@ -244,9 +242,9 @@ func ExpandSchema(schema JObject, payload J, errors []gojsonschema.ResultError) 
 
 // ApplyPayload applies the payload to the old schema and returns the new schema and an error if any.
 // Note that if no new schema is generated, the newSchema is nil.
-func ApplyPayload(oldSchema JObject, payload J) (JObject, error) {
+func ApplyPayload(oldSchema map[string]any, payload any, resourceName string) (map[string]any, error) {
 	if len(oldSchema) == 0 {
-		return CreateSchema(payload), nil
+		return CreateSchema(payload, resourceName), nil
 	}
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewGoLoader(oldSchema))
 	if err != nil {
@@ -268,7 +266,7 @@ func ApplyPayload(oldSchema JObject, payload J) (JObject, error) {
 }
 
 // ValidatePayload validates the payload against the schema.
-func ValidatePayload(schema JObject, payload J) (*gojsonschema.Result, error) {
+func ValidatePayload(schema map[string]any, payload any) (*gojsonschema.Result, error) {
 	if len(schema) == 0 {
 		return nil, fmt.Errorf("schema is empty")
 	}

@@ -25,6 +25,9 @@ func main() {
 
 	// Create DB connection.
 	db, err := wrappers.NewDB(dbStr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	handler := handler.NewHavenHandler(db)
 

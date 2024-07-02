@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -41,7 +42,12 @@ type ReferencePayloads struct {
 
 type DB interface {
 	GetResource(resource string) (*Resource, error)
+	GetAllResources() ([]Resource, error)
+	GetResourceVersions(resourceID uint) ([]ResourceVersions, error)
+	GetReferencePayload(id uint) (ReferencePayloads, error)
 	OpenTxn() *gorm.DB
+	TearDown() error
+	TruncateAll() error
 }
 
 type DBImpl struct {
@@ -75,4 +81,36 @@ func (d *DBImpl) GetResource(resource string) (*Resource, error) {
 		return nil, fmt.Errorf("resource not found for %s", resource)
 	}
 	return r, nil
+}
+
+func (d *DBImpl) TearDown() error {
+	return d.conn.Migrator().DropTable(&Resource{}, &ReferencePayloads{}, &ResourceVersions{})
+}
+
+func (d *DBImpl) TruncateAll() error {
+	fmt.Println("Truncating tables")
+	tx := d.conn.Exec("TRUNCATE TABLE resources, reference_payloads, resource_versions;")
+	fmt.Println(tx.Error)
+	tx.Commit()
+	return nil
+}
+
+func (d *DBImpl) GetAllResources() ([]Resource, error) {
+	var resources []Resource
+	d.conn.Find(&resources)
+	return resources, nil
+}
+
+func (d *DBImpl) GetResourceVersions(resourceID uint) ([]ResourceVersions, error) {
+	var versions []ResourceVersions
+	d.conn.Find(&versions)
+	str, _ := json.Marshal(versions)
+	fmt.Println(string(str))
+	return versions, nil
+}
+
+func (d *DBImpl) GetReferencePayload(id uint) (ReferencePayloads, error) {
+	var payload ReferencePayloads
+	d.conn.Find(&payload, "id = ?", id)
+	return payload, nil
 }

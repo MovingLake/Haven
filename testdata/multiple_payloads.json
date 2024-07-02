@@ -1,0 +1,1518 @@
+{
+    "requests": [
+        {
+            "action": "addPayload",
+            "resource": "test",
+            "payload": {
+                "_id": "abc2",
+                "integration": {
+                    "limitations": {
+                        "availableStatuses": []
+                    },
+                    "airbnb2": {
+                        "id": "FWER",
+                        "status": "accept"
+                    },
+                    "bookingCom": {
+                        "invalidCreditCards": [],
+                        "reports": []
+                    },
+                    "platform": "airbnb2",
+                    "_id": "234f2"
+                },
+                "review": {
+                    "shouldReview": true
+                },
+                "manuallyCreated": false,
+                "listingId": "3sadf3",
+                "confirmationCode": "FSDF",
+                "checkIn": "2021-11-20T21:00:00.000Z",
+                "checkInDateLocalized": "2021-11-20",
+                "nightsCount": 1,
+                "guestsCount": 1,
+                "cancellationPolicy": "moderate",
+                "checkOut": "2021-11-21T15:00:00.000Z",
+                "checkOutDateLocalized": "2021-11-21",
+                "source": "airbnb2",
+                "listing": {
+                    "_id": "f234sdef",
+                    "picture": {
+                        "thumbnail": "some.jpg"
+                    },
+                    "prices": {
+                        "currency": "USD"
+                    },
+                    "type": "SINGLE",
+                    "address": {
+                        "full": "Some Address"
+                    },
+                    "timezone": "America/New_York",
+                    "nickname": "Gal 5",
+                    "title": "The Manor"
+                },
+                "status": "confirmed",
+                "guest": {
+                    "_id": "34dfgdf",
+                    "email": "",
+                    "firstName": "Lady",
+                    "lastName": "Gaga",
+                    "phone": "4156897661",
+                    "fullName": "Lady Gaga"
+                },
+                "money": {
+                    "altered": false,
+                    "_id": "ae35234",
+                    "invoiceItems": [
+                        {
+                            "_id": "8999eeee",
+                            "type": "TAX",
+                            "normalType": "TT",
+                            "title": "Tourist tax",
+                            "currency": "USD",
+                            "amount": 18.05,
+                            "isLocked": true
+                        },
+                        {
+                            "_id": "8999eeee",
+                            "type": "ACCOMMODATION_FARE",
+                            "normalType": "AF",
+                            "title": "Accommodation fare",
+                            "amount": 322,
+                            "isLocked": true,
+                            "currency": "USD"
+                        },
+                        {
+                            "_id": "8999eeee",
+                            "type": "CLEANING_FEE",
+                            "normalType": "CF",
+                            "title": "Cleaning fee",
+                            "amount": 39,
+                            "isLocked": true,
+                            "currency": "USD"
+                        },
+                        {
+                            "_id": "8999eeee",
+                            "normalType": "PCM",
+                            "amount": -10.83,
+                            "title": "Host channel fee",
+                            "type": "ADDITIONAL",
+                            "isLocked": true,
+                            "currency": "USD"
+                        }
+                    ],
+                    "payments": [
+                        {
+                            "chargebacksData": {
+                                "chargebacks": []
+                            },
+                            "paymentMethodStatus": "ACTIVE",
+                            "isAuthorizationHold": false,
+                            "status": "SUCCEEDED",
+                            "_id": "8999eeee",
+                            "refunds": [],
+                            "authorizationHoldCaptures": [],
+                            "createdAt": "2021-11-09T21:01:33.142Z",
+                            "attempts": [],
+                            "receiptTargets": [],
+                            "paymentMethodId": "8999eeee",
+                            "amount": 368.22,
+                            "shouldBePaidAt": "2021-11-20T22:00:00.000Z",
+                            "currency": "USD",
+                            "guestId": "8999eeee",
+                            "paidAt": "2021-11-22T04:40:00.000Z",
+                            "receiptId": 2062739989777
+                        }
+                    ],
+                    "autoPaymentsPolicy": [],
+                    "transientOccupancyTax": 45.13,
+                    "hostOriginalPayout": 368.22,
+                    "fareAccommodation": 322,
+                    "hostServiceFee": 10.83,
+                    "fareCleaning": 39,
+                    "currency": "USD",
+                    "paymentProviderIds": [
+                        "8999eeee"
+                    ],
+                    "fareAccommodationAdjustment": 0,
+                    "fareAccommodationDiscount": 0,
+                    "fareAccommodationAdjusted": 322,
+                    "hostServiceFeeTax": 0,
+                    "hostServiceFeeIncTax": 0,
+                    "subTotalPrice": 350.17,
+                    "hostPayout": 368.22,
+                    "hostPayoutUsd": 368.22,
+                    "totalTaxes": 18.05,
+                    "totalRefunded": 0,
+                    "totalPaid": 368.22,
+                    "paymentsDue": 0,
+                    "balanceDue": 0,
+                    "isFullyPaid": true,
+                    "useAccountRevenueShare": false,
+                    "netIncomeFormula": "adjusted_fare_accommodation+fare_cleaning",
+                    "netIncome": 361,
+                    "commissionFormula": "fare_accommodation*.20 + fare_cleaning*.20",
+                    "commission": 72.2,
+                    "commissionTaxPercentage": 0,
+                    "commissionTax": 0,
+                    "commissionIncTax": 72.2,
+                    "ownerRevenueFormula": "fare_accommodation + fare_cleaning",
+                    "ownerRevenue": 361,
+                    "currencyConversionRateToAccount": 1,
+                    "totalFees": 39
+                },
+                "accountId": "8999eeee",
+                "guestId": "8999eeee",
+                "isReturningGuest": false,
+                "confirmedAt": "2021-11-09T21:01:32.877Z",
+                "createdAt": "2021-11-09T21:01:33.144Z",
+                "pendingTasks": [],
+                "customFields": [],
+                "daysInAdvance": 10,
+                "keyCode": "111111",
+                "log": [
+                    {
+                        "_id": "8999eeee",
+                        "reservationId": "8999eeee",
+                        "event": "Reservation was updated retroactively",
+                        "by": "AuthService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "money useAccountRevenueShare"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "adjusted_fare_accommodation+fare_cleaning"
+                                    }
+                                ],
+                                "field": "money netIncomeFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "43"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "361"
+                                    }
+                                ],
+                                "field": "money netIncome"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation*.20 + fare_cleaning*.20"
+                                    }
+                                ],
+                                "field": "money commissionFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money commissionTaxPercentage"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation + fare_cleaning"
+                                    }
+                                ],
+                                "field": "money ownerRevenueFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "8999eeee"
+                                    }
+                                ],
+                                "field": "money _id"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "39"
+                                    }
+                                ],
+                                "field": "money totalFees"
+                            }
+                        ],
+                        "at": "2022-07-16T16:15:01.320Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee",
+                        "reservationId": "8999eeee",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "PENDING"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "SUCCEEDED"
+                                    }
+                                ],
+                                "field": "money payments 0 status"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Mon Nov 22 2021 04:40:00 GMT+0000 (UTC)"
+                                    }
+                                ],
+                                "field": "money payments 0 paidAt"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "20627394"
+                                    }
+                                ],
+                                "field": "money payments 0 receiptId"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "0"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "368.22"
+                                    }
+                                ],
+                                "field": "money totalPaid"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "368.22"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money paymentsDue"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "368.22"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money balanceDue"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "false"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "money isFullyPaid"
+                            }
+                        ],
+                        "at": "2021-11-22T04:41:16.646Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee",
+                        "reservationId": "8999eeee",
+                        "event": "Reservation was updated",
+                        "by": "PointCentral",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "715591\u2713"
+                                    }
+                                ],
+                                "field": "keyCode"
+                            }
+                        ],
+                        "at": "2021-11-09T22:26:00.398Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee",
+                        "reservationId": "8999eeee",
+                        "event": "Booking was confirmed successfully",
+                        "at": "2021-11-09T21:01:33.261Z",
+                        "changes": [],
+                        "__v": 0
+                    }
+                ]
+            }
+        },
+        {
+            "action": "addPayload",
+            "resource": "test",
+            "payload": {
+                "_id": "8999eeee2ebca",
+                "integration": {
+                    "limitations": {
+                        "availableStatuses": []
+                    },
+                    "airbnb2": {
+                        "id": "HM23432323",
+                        "status": "accept",
+                        "review": {
+                            "createdAt": "2021-11-07T18:20:25.266Z",
+                            "expiresAt": "2021-11-21T18:20:23.067Z",
+                            "id": "2342342335352567",
+                            "lastUpdatedAt": "2021-11-22T03:15:33.123Z",
+                            "sent": null,
+                            "public": true
+                        }
+                    },
+                    "bookingCom": {
+                        "invalidCreditCards": [],
+                        "reports": []
+                    },
+                    "platform": "airbnb2",
+                    "_id": "8999eeee2ebca"
+                },
+                "review": {
+                    "shouldReview": true,
+                    "guestReview": {
+                        "id": "8999eeee2ebca",
+                        "isGuestReview": true,
+                        "isHostReview": false,
+                        "confirmationCode": "HM4634534",
+                        "public": "Very nice apartment.  Great location walking distance to everything",
+                        "private": "Very nice apartment.  Great location walking distance to everything",
+                        "expiresAt": "2021-11-21T18:20:23.065Z",
+                        "revieweeRole": "host",
+                        "hidden": false,
+                        "submitted": true,
+                        "createdAt": "2021-11-08T13:46:08.039Z",
+                        "overallRating": 5,
+                        "categoryRatings": [
+                            {
+                                "category": "communication",
+                                "rating": 5
+                            },
+                            {
+                                "category": "location",
+                                "rating": 5
+                            },
+                            {
+                                "category": "checkin",
+                                "rating": 5
+                            },
+                            {
+                                "category": "accuracy",
+                                "rating": 5
+                            },
+                            {
+                                "category": "value",
+                                "rating": 4
+                            },
+                            {
+                                "category": "cleanliness",
+                                "rating": 5
+                            }
+                        ]
+                    },
+                    "hasGuestReviewed": true
+                },
+                "manuallyCreated": false,
+                "listingId": "8999eeee2ebca",
+                "confirmationCode": "HM345435",
+                "checkIn": "2021-11-05T20:00:00.000Z",
+                "checkInDateLocalized": "2021-11-05",
+                "nightsCount": 2,
+                "guestsCount": 2,
+                "cancellationPolicy": "moderate",
+                "checkOut": "2021-11-07T15:00:00.000Z",
+                "checkOutDateLocalized": "2021-11-07",
+                "source": "airbnb2",
+                "listing": {
+                    "_id": "8999eeee2ebca",
+                    "timezone": "America/New_York",
+                    "title": "The Flat!",
+                    "nickname": "123 Flat",
+                    "prices": {
+                        "currency": "USD"
+                    },
+                    "picture": {
+                        "thumbnail": "someimg.jpg"
+                    },
+                    "address": {
+                        "full": "Some Address"
+                    },
+                    "type": "SINGLE"
+                },
+                "status": "confirmed",
+                "guest": {
+                    "_id": "8999eeee2ebca",
+                    "email": "",
+                    "firstName": "Cloud",
+                    "lastName": "Strife",
+                    "phone": "12223336575",
+                    "fullName": "Cloud Strife"
+                },
+                "money": {
+                    "altered": false,
+                    "_id": "8999eeee2ebca",
+                    "invoiceItems": [
+                        {
+                            "_id": "8999eeee2ebca",
+                            "type": "TAX",
+                            "normalType": "TT",
+                            "title": "Tourist tax",
+                            "currency": "USD",
+                            "amount": 49.25,
+                            "isLocked": true
+                        },
+                        {
+                            "_id": "8999eeee2ebca",
+                            "type": "ACCOMMODATION_FARE",
+                            "normalType": "AF",
+                            "title": "Accommodation fare",
+                            "amount": 940,
+                            "isLocked": true,
+                            "currency": "USD"
+                        },
+                        {
+                            "_id": "8999eeee2ebca",
+                            "type": "CLEANING_FEE",
+                            "normalType": "CF",
+                            "title": "Cleaning fee",
+                            "amount": 45,
+                            "isLocked": true,
+                            "currency": "USD"
+                        },
+                        {
+                            "_id": "8999eeee2ebca",
+                            "normalType": "PCM",
+                            "amount": -29.55,
+                            "title": "Host channel fee",
+                            "type": "ADDITIONAL",
+                            "isLocked": true,
+                            "currency": "USD"
+                        }
+                    ],
+                    "payments": [
+                        {
+                            "chargebacksData": {
+                                "chargebacks": []
+                            },
+                            "paymentMethodStatus": "ACTIVE",
+                            "isAuthorizationHold": false,
+                            "status": "SUCCEEDED",
+                            "_id": "8999eeee2ebca",
+                            "refunds": [],
+                            "authorizationHoldCaptures": [],
+                            "createdAt": "2021-10-28T17:20:07.587Z",
+                            "attempts": [],
+                            "receiptTargets": [],
+                            "paymentMethodId": "8999eeee2ebca",
+                            "amount": 1004.7,
+                            "shouldBePaidAt": "2021-11-05T22:00:00.000Z",
+                            "currency": "USD",
+                            "guestId": "617adbc75bfa110031934771",
+                            "paidAt": "2021-11-08T03:25:00.000Z",
+                            "receiptId": 20553722
+                        }
+                    ],
+                    "autoPaymentsPolicy": [],
+                    "transientOccupancyTax": 73.88,
+                    "hostOriginalPayout": 1004.7,
+                    "fareAccommodation": 940,
+                    "hostServiceFee": 29.55,
+                    "fareCleaning": 45,
+                    "currency": "USD",
+                    "paymentProviderIds": [
+                        "8999eeee2ebca"
+                    ],
+                    "fareAccommodationAdjustment": 0,
+                    "fareAccommodationDiscount": 0,
+                    "fareAccommodationAdjusted": 940,
+                    "hostServiceFeeTax": 0,
+                    "hostServiceFeeIncTax": 0,
+                    "subTotalPrice": 955.45,
+                    "hostPayout": 1004.7,
+                    "hostPayoutUsd": 1004.7,
+                    "totalTaxes": 49.25,
+                    "totalRefunded": 0,
+                    "totalPaid": 1004.7,
+                    "paymentsDue": 0,
+                    "balanceDue": 0,
+                    "isFullyPaid": true,
+                    "useAccountRevenueShare": false,
+                    "netIncomeFormula": "adjusted_fare_accommodation+fare_cleaning",
+                    "netIncome": 985,
+                    "commissionFormula": "fare_accommodation*.20 + fare_cleaning*.20",
+                    "commission": 197,
+                    "commissionTaxPercentage": 0,
+                    "commissionTax": 0,
+                    "commissionIncTax": 197,
+                    "ownerRevenueFormula": "fare_accommodation + fare_cleaning",
+                    "ownerRevenue": 985,
+                    "currencyConversionRateToAccount": 1,
+                    "totalFees": 45
+                },
+                "accountId": "5b8550ddc3aa49004448b06d",
+                "guestId": "8999eeee2ebca",
+                "isReturningGuest": false,
+                "confirmedAt": "2021-10-28T17:20:07.391Z",
+                "createdAt": "2021-10-28T17:20:07.589Z",
+                "pendingTasks": [],
+                "customFields": [],
+                "daysInAdvance": 8,
+                "keyCode": "8999eeee2ebca\u2713",
+                "log": [
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated retroactively",
+                        "by": "AuthService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "money useAccountRevenueShare"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "adjusted_fare_accommodation+fare_cleaning"
+                                    }
+                                ],
+                                "field": "money netIncomeFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "45"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "985"
+                                    }
+                                ],
+                                "field": "money netIncome"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation*.20 + fare_cleaning*.20"
+                                    }
+                                ],
+                                "field": "money commissionFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money commissionTaxPercentage"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation + fare_cleaning"
+                                    }
+                                ],
+                                "field": "money ownerRevenueFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "8999eeee2ebca"
+                                    }
+                                ],
+                                "field": "money _id"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "45"
+                                    }
+                                ],
+                                "field": "money totalFees"
+                            }
+                        ],
+                        "at": "2022-07-16T16:41:50.426Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "integration airbnb2 review sent"
+                            }
+                        ],
+                        "at": "2021-11-22T03:15:35.826Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "integration airbnb2 review public"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "Hidden"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "Very nice apartment.  Great location walking distance to everything"
+                                    }
+                                ],
+                                "field": "review guestReview public"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "Hidden"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "Very nice apartment.  Great location walking distance to everything"
+                                    }
+                                ],
+                                "field": "review guestReview private"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "true"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "review guestReview hidden"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview overallRating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "communication"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 0 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 0 rating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "location"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 1 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 1 rating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "checkin"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 2 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 2 rating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "accuracy"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 3 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 3 rating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "value"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 4 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "4"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 4 rating"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "cleanliness"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 5 category"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "5"
+                                    }
+                                ],
+                                "field": "review guestReview categoryRatings 5 rating"
+                            }
+                        ],
+                        "at": "2021-11-21T18:20:33.107Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "8999eeee2ebca"
+                                    }
+                                ],
+                                "field": "review guestReview id"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "review guestReview isGuestReview"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "review guestReview isHostReview"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "HM49ZKJWCB"
+                                    }
+                                ],
+                                "field": "review guestReview confirmationCode"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Hidden"
+                                    }
+                                ],
+                                "field": "review guestReview public"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Hidden"
+                                    }
+                                ],
+                                "field": "review guestReview private"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Sun Nov 21 2021 18:20:23 GMT+0000 (UTC)"
+                                    }
+                                ],
+                                "field": "review guestReview expiresAt"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "host"
+                                    }
+                                ],
+                                "field": "review guestReview revieweeRole"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "review guestReview hidden"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "review guestReview submitted"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "review hasGuestReviewed"
+                            }
+                        ],
+                        "at": "2021-11-17T01:11:50.385Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "PENDING"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "SUCCEEDED"
+                                    }
+                                ],
+                                "field": "money payments 0 status"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Mon Nov 08 2021 03:25:00 GMT+0000 (UTC)"
+                                    }
+                                ],
+                                "field": "money payments 0 paidAt"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "20553722"
+                                    }
+                                ],
+                                "field": "money payments 0 receiptId"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "0"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "1004.7"
+                                    }
+                                ],
+                                "field": "money totalPaid"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "1004.7"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money paymentsDue"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "1004.7"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money balanceDue"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "false"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "true"
+                                    }
+                                ],
+                                "field": "money isFullyPaid"
+                            }
+                        ],
+                        "at": "2021-11-08T03:25:27.045Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "ChannelService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "integration airbnb2 review sent"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "2345243532452"
+                                    }
+                                ],
+                                "field": "integration airbnb2 review id"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "Sun Nov 21 2021 18:20:23 GMT+0000 (UTC)"
+                                    }
+                                ],
+                                "field": "integration airbnb2 review expiresAt"
+                            }
+                        ],
+                        "at": "2021-11-07T18:20:25.628Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated",
+                        "by": "PointCentral",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "547157\u2713"
+                                    }
+                                ],
+                                "field": "keyCode"
+                            }
+                        ],
+                        "at": "2021-10-28T18:10:49.443Z",
+                        "__v": 0
+                    },
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Booking was confirmed successfully",
+                        "at": "2021-10-28T17:20:07.828Z",
+                        "changes": [],
+                        "__v": 0
+                    }
+                ]
+            }
+        },
+        {
+            "action": "addPayload",
+            "resource": "test",
+            "payload": {
+                "_id": "8999eeee2ebca",
+                "integration": {
+                    "limitations": {
+                        "availableStatuses": [
+                            "canceled",
+                            "checked_in",
+                            "checked_out"
+                        ]
+                    },
+                    "bookingCom": {
+                        "invalidCreditCards": [],
+                        "reports": []
+                    },
+                    "_id": "8999eeee2ebca",
+                    "platform": "manual"
+                },
+                "review": {
+                    "shouldReview": true
+                },
+                "manuallyCreated": true,
+                "status": "confirmed",
+                "checkIn": "2021-11-08T21:00:00.000Z",
+                "checkOut": "2021-11-15T15:00:00.000Z",
+                "nightsCount": 7,
+                "guestsCount": 2,
+                "money": {
+                    "altered": false,
+                    "invoiceItems": [],
+                    "payments": [],
+                    "autoPaymentsPolicy": [
+                        {
+                            "_id": "8999eeee2ebca",
+                            "amount": 100,
+                            "chargeType": "PERCENTAGE",
+                            "scheduleTo": {
+                                "reservationEvent": "CONFIRMATION",
+                                "timeRelation": {
+                                    "amount": 1,
+                                    "relation": "AT",
+                                    "unit": "HOURS"
+                                }
+                            },
+                            "useGuestCard": true
+                        }
+                    ],
+                    "currency": "USD",
+                    "fareAccommodation": 0,
+                    "guestTaxes": 0,
+                    "fareCleaning": 0,
+                    "paymentProviderIds": [
+                        "8999eeee2ebca"
+                    ],
+                    "fareAccommodationAdjustment": 0,
+                    "fareAccommodationDiscount": 0,
+                    "fareAccommodationAdjusted": 0,
+                    "hostServiceFee": 0,
+                    "hostServiceFeeTax": 0,
+                    "hostServiceFeeIncTax": 0,
+                    "subTotalPrice": 0,
+                    "hostPayout": 0,
+                    "hostPayoutUsd": 0,
+                    "totalTaxes": 0,
+                    "totalRefunded": 0,
+                    "totalPaid": 0,
+                    "paymentsDue": 0,
+                    "balanceDue": 0,
+                    "isFullyPaid": true,
+                    "useAccountRevenueShare": false,
+                    "netIncomeFormula": "0+0",
+                    "netIncome": 0,
+                    "commissionFormula": "fare_accommodation*0 + fare_cleaning*0",
+                    "commission": 0,
+                    "commissionTaxPercentage": 0,
+                    "commissionTax": 0,
+                    "commissionIncTax": 0,
+                    "ownerRevenueFormula": "fare_accommodation + fare_cleaning",
+                    "ownerRevenue": 0,
+                    "currencyConversionRateToAccount": 1
+                },
+                "source": "Direct",
+                "listingId": "8999eeee2ebca",
+                "checkInDateLocalized": "2021-11-08",
+                "checkOutDateLocalized": "2021-11-15",
+                "guestId": "8999eeee2ebca",
+                "accountId": "8999eeee2ebca",
+                "isReturningGuest": false,
+                "createdAt": "2021-11-06T18:23:29.775Z",
+                "pendingTasks": [],
+                "customFields": [],
+                "guest": {
+                    "_id": "8999eeee2ebca",
+                    "firstName": "Michael",
+                    "lastName": "Jackson",
+                    "email": "mjackson@gmail.com",
+                    "phone": "12223336767",
+                    "fullName": "Michael Jackson"
+                },
+                "listing": {
+                    "_id": "8999eeee2ebca",
+                    "timezone": "America/New_York",
+                    "nickname": "SIYC Condo 1",
+                    "title": "Grand Marina Suite- Stock Island Yacht Club",
+                    "mtl": {
+                        "_id": "8999eeee2ebca",
+                        "c": [],
+                        "p": "8999eeee2ebca"
+                    },
+                    "prices": {
+                        "currency": "USD"
+                    },
+                    "picture": {
+                        "thumbnail": "somefile"
+                    },
+                    "address": {
+                        "full": "Some Address"
+                    },
+                    "type": "MTL_CHILD"
+                },
+                "confirmationCode": "QkkRG9JNG",
+                "confirmedAt": "2021-11-06T18:24:06.411Z",
+                "daysInAdvance": 2,
+                "keyCode": "556356\u2713",
+                "log": [
+                    {
+                        "__v": 0,
+                        "_id": "8999eeee2ebca",
+                        "at": "2021-11-06T18:58:25.398Z",
+                        "by": "PointCentral",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "556356\u2713"
+                                    }
+                                ],
+                                "field": "keyCode"
+                            }
+                        ],
+                        "event": "Reservation was updated",
+                        "reservationId": "8999eeee2ebca"
+                    },
+                    {
+                        "__v": 0,
+                        "_id": "8999eeee2ebca",
+                        "at": "2021-11-06T18:24:06.593Z",
+                        "by": "wanderson@spottswood.com",
+                        "changes": [],
+                        "event": "Booking was confirmed",
+                        "reservationId": "8999eeee2ebca"
+                    }
+                ]
+            }
+        },
+        {
+            "action": "addPayload",
+            "resource": "test",
+            "payload": {
+                "_id": "8999eeee2ebca",
+                "integration": {
+                    "limitations": {
+                        "availableStatuses": []
+                    },
+                    "airbnb2": {
+                        "status": "active"
+                    },
+                    "bookingCom": {
+                        "invalidCreditCards": [],
+                        "reports": []
+                    },
+                    "platform": "airbnb2",
+                    "_id": "8999eeee2ebca"
+                },
+                "review": {
+                    "shouldReview": true
+                },
+                "manuallyCreated": false,
+                "listingId": "8999eeee2ebca",
+                "accountId": "8999eeee2ebca",
+                "guestsCount": 2,
+                "source": "airbnb2",
+                "status": "inquiry",
+                "checkIn": "2021-11-12T21:00:00.000Z",
+                "checkOut": "2021-11-14T15:00:00.000Z",
+                "checkInDateLocalized": "2021-11-12",
+                "checkOutDateLocalized": "2021-11-14",
+                "money": {
+                    "altered": false,
+                    "_id": "8999eeee2ebca",
+                    "invoiceItems": [
+                        {
+                            "_id": "8999eeee2ebca",
+                            "title": "Accommodation fare",
+                            "amount": 982,
+                            "currency": "USD",
+                            "type": "ACCOMMODATION_FARE",
+                            "isLocked": true,
+                            "normalType": "AF"
+                        },
+                        {
+                            "_id": "8999eeee2ebca",
+                            "title": "Cleaning fee",
+                            "amount": 39,
+                            "currency": "USD",
+                            "type": "CLEANING_FEE",
+                            "isLocked": true,
+                            "normalType": "CF"
+                        }
+                    ],
+                    "payments": [],
+                    "autoPaymentsPolicy": [],
+                    "hostOriginalPayout": 990.37,
+                    "paymentProviderIds": [
+                        "8999eeee2ebca"
+                    ],
+                    "fareAccommodationAdjustment": 0,
+                    "fareAccommodationDiscount": 0,
+                    "currency": "USD",
+                    "fareAccommodation": 982,
+                    "fareAccommodationAdjusted": 982,
+                    "fareCleaning": 39,
+                    "hostServiceFee": 0,
+                    "hostServiceFeeTax": 0,
+                    "hostServiceFeeIncTax": 0,
+                    "subTotalPrice": 1021,
+                    "hostPayout": 1021,
+                    "hostPayoutUsd": 1021,
+                    "totalTaxes": 0,
+                    "totalRefunded": 0,
+                    "totalPaid": 0,
+                    "paymentsDue": 0,
+                    "balanceDue": 1021,
+                    "isFullyPaid": false,
+                    "useAccountRevenueShare": false,
+                    "netIncomeFormula": "adjusted_fare_accommodation+fare_cleaning",
+                    "netIncome": 1021,
+                    "commissionFormula": "fare_accommodation*.2 + fare_cleaning*.2",
+                    "commission": 204.2,
+                    "commissionTaxPercentage": 0,
+                    "commissionTax": 0,
+                    "commissionIncTax": 204.2,
+                    "ownerRevenueFormula": "fare_accommodation + fare_cleaning",
+                    "ownerRevenue": 1021,
+                    "totalFees": 39
+                },
+                "guest": {
+                    "_id": "8999eeee2ebca",
+                    "firstName": "Michael",
+                    "fullName": "Michael"
+                },
+                "preApproveState": false,
+                "guestId": "8999eeee2ebca",
+                "isReturningGuest": false,
+                "nightsCount": 2,
+                "createdAt": "2021-11-10T01:30:19.914Z",
+                "pendingTasks": [],
+                "customFields": [],
+                "listing": {
+                    "_id": "8999eeee2ebca",
+                    "picture": {
+                        "thumbnail": "someimg.jpg"
+                    },
+                    "prices": {
+                        "currency": "USD"
+                    },
+                    "type": "SINGLE",
+                    "address": {
+                        "full": "Some Address"
+                    },
+                    "timezone": "America/New_York",
+                    "nickname": "GMH 6",
+                    "title": "Yellow Room at Hotel with Pool!"
+                },
+                "log": [
+                    {
+                        "_id": "8999eeee2ebca",
+                        "reservationId": "8999eeee2ebca",
+                        "event": "Reservation was updated retroactively",
+                        "by": "AuthService",
+                        "changes": [
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "false"
+                                    }
+                                ],
+                                "field": "money useAccountRevenueShare"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "adjusted_fare_accommodation+fare_cleaning"
+                                    }
+                                ],
+                                "field": "money netIncomeFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "removed": true,
+                                        "value": "35"
+                                    },
+                                    {
+                                        "added": true,
+                                        "value": "1021"
+                                    }
+                                ],
+                                "field": "money netIncome"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation*.2 + fare_cleaning*.2"
+                                    }
+                                ],
+                                "field": "money commissionFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "0"
+                                    }
+                                ],
+                                "field": "money commissionTaxPercentage"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "fare_accommodation + fare_cleaning"
+                                    }
+                                ],
+                                "field": "money ownerRevenueFormula"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "8999eeee2ebca"
+                                    }
+                                ],
+                                "field": "money _id"
+                            },
+                            {
+                                "diff": [
+                                    {
+                                        "added": true,
+                                        "value": "39"
+                                    }
+                                ],
+                                "field": "money totalFees"
+                            }
+                        ],
+                        "at": "2022-07-16T16:23:21.917Z",
+                        "__v": 0
+                    }
+                ]
+            }
+        }
+    ]
+}

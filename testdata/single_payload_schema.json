@@ -1,0 +1,58 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://movinglake.com/haven.schema.json",
+    "title": "test",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string"
+        },
+        "status": {
+            "type": "number"
+        },
+        "created_at": {
+            "type": "string"
+        },
+        "updated_at": {
+            "type": "string"
+        },
+        "deleted_at": {
+            "type": "null"
+        },
+        "created_by": {
+            "type": "number"
+        },
+        "updated_by": {
+            "type": "number"
+        },
+        "price": {
+            "type": "number"
+        },
+        "data": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["id", "name", "tags"]
+        }
+    },
+    "required": ["created_at", "created_by", "data", "deleted_at", "description", "name", "price", "status", "type", "updated_at", "updated_by"]
+}

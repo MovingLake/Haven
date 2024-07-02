@@ -25,40 +25,40 @@ func buildError(t string, c *gojsonschema.JsonContext, v any, d, df string, dets
 
 func TestArraySchema(t *testing.T) {
 	cases := []struct {
-		payload jsonutils.JArray
+		payload []any
 		name    string
-		want    jsonutils.JObject
+		want    map[string]any
 	}{
 		{
-			payload: jsonutils.JArray{"key"},
+			payload: []any{"key"},
 			name:    "Single string",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "array",
-				"items": jsonutils.JObject{
+				"items": map[string]any{
 					"type": "string",
 				},
 			},
 		},
 		{
-			payload: jsonutils.JArray{"key", 2, 3.0, true, nil},
+			payload: []any{"key", 2, 3.0, true, nil},
 			name:    "Mixed Array",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "array",
-				"items": jsonutils.JObject{
-					"anyOf": jsonutils.JArray{
-						jsonutils.JObject{
+				"items": map[string]any{
+					"anyOf": []any{
+						map[string]any{
 							"type": "boolean",
 						},
-						jsonutils.JObject{
+						map[string]any{
 							"type": "integer",
 						},
-						jsonutils.JObject{
+						map[string]any{
 							"type": "null",
 						},
-						jsonutils.JObject{
+						map[string]any{
 							"type": "number",
 						},
-						jsonutils.JObject{
+						map[string]any{
 							"type": "string",
 						},
 					},
@@ -66,9 +66,9 @@ func TestArraySchema(t *testing.T) {
 			},
 		},
 		{
-			payload: jsonutils.JArray{},
+			payload: []any{},
 			name:    "Empty Array",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "array",
 			},
 		},
@@ -85,53 +85,53 @@ func TestArraySchema(t *testing.T) {
 
 func TestObjectSchema(t *testing.T) {
 	cases := []struct {
-		payload jsonutils.JObject
+		payload map[string]any
 		name    string
-		want    jsonutils.JObject
+		want    map[string]any
 	}{
 		{
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key":  "value",
 				"key2": 2,
 				"key3": 3.0,
 				"key4": true,
 				"key5": nil,
-				"key6": jsonutils.JObject{
+				"key6": map[string]any{
 					"key": "value",
 				},
-				"key7": jsonutils.JArray{"key"},
+				"key7": []any{"key"},
 			},
 			name: "Full Object",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
-					"key2": jsonutils.JObject{
+					"key2": map[string]any{
 						"type": "integer",
 					},
-					"key3": jsonutils.JObject{
+					"key3": map[string]any{
 						"type": "number",
 					},
-					"key4": jsonutils.JObject{
+					"key4": map[string]any{
 						"type": "boolean",
 					},
-					"key5": jsonutils.JObject{
+					"key5": map[string]any{
 						"type": "null",
 					},
-					"key6": jsonutils.JObject{
+					"key6": map[string]any{
 						"type":     "object",
 						"required": []string{"key"},
-						"properties": jsonutils.JObject{
-							"key": jsonutils.JObject{
+						"properties": map[string]any{
+							"key": map[string]any{
 								"type": "string",
 							},
 						},
 					},
-					"key7": jsonutils.JObject{
+					"key7": map[string]any{
 						"type": "array",
-						"items": jsonutils.JObject{
+						"items": map[string]any{
 							"type": "string",
 						},
 					},
@@ -140,12 +140,12 @@ func TestObjectSchema(t *testing.T) {
 			},
 		},
 		{
-			payload: jsonutils.JObject{},
+			payload: map[string]any{},
 			name:    "Empty Object",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type":       "object",
 				"required":   []string{},
-				"properties": jsonutils.JObject{},
+				"properties": map[string]any{},
 			},
 		},
 	}
@@ -161,57 +161,57 @@ func TestObjectSchema(t *testing.T) {
 
 func TestCreateSchema(t *testing.T) {
 	cases := []struct {
-		payload jsonutils.J
+		payload any
 		name    string
-		want    jsonutils.JObject
+		want    map[string]any
 	}{
 		{
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key":  "value",
 				"key2": 2,
 				"key3": 3.0,
 				"key4": true,
 				"key5": nil,
-				"key6": jsonutils.JObject{
+				"key6": map[string]any{
 					"key": "value",
 				},
-				"key7": jsonutils.JArray{"key"},
+				"key7": []any{"key"},
 			},
 			name: "Full Object",
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"$schema":              "https://json-schema.org/draft/2020-12/schema",
 				"$id":                  "https://movinglake.com/haven.schema.json",
-				"title":                "",
+				"title":                "Full Object",
 				"type":                 "object",
 				"additionalProperties": false,
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
-					"key2": jsonutils.JObject{
+					"key2": map[string]any{
 						"type": "integer",
 					},
-					"key3": jsonutils.JObject{
+					"key3": map[string]any{
 						"type": "number",
 					},
-					"key4": jsonutils.JObject{
+					"key4": map[string]any{
 						"type": "boolean",
 					},
-					"key5": jsonutils.JObject{
+					"key5": map[string]any{
 						"type": "null",
 					},
-					"key6": jsonutils.JObject{
+					"key6": map[string]any{
 						"type":     "object",
 						"required": []string{"key"},
-						"properties": jsonutils.JObject{
-							"key": jsonutils.JObject{
+						"properties": map[string]any{
+							"key": map[string]any{
 								"type": "string",
 							},
 						},
 					},
-					"key7": jsonutils.JObject{
+					"key7": map[string]any{
 						"type": "array",
-						"items": jsonutils.JObject{
+						"items": map[string]any{
 							"type": "string",
 						},
 					},
@@ -222,7 +222,7 @@ func TestCreateSchema(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := jsonutils.CreateSchema(c.payload)
+			got := jsonutils.CreateSchema(c.payload, c.name)
 			if diff := cmp.Diff(c.want, got, ignoreSlices); diff != "" {
 				t.Errorf("CreateSchema(%v) returned diff %v", c.payload, diff)
 			}
@@ -262,12 +262,12 @@ func TestTypeOf(t *testing.T) {
 			want:    "string",
 		},
 		{
-			payload: jsonutils.JObject{},
+			payload: map[string]any{},
 			name:    "object",
 			want:    "object",
 		},
 		{
-			payload: jsonutils.JArray{},
+			payload: []any{},
 			name:    "array",
 			want:    "array",
 		},
@@ -285,46 +285,46 @@ func TestTypeOf(t *testing.T) {
 func TestExpandSchema(t *testing.T) {
 	cases := []struct {
 		name    string
-		schema  jsonutils.JObject
-		payload jsonutils.J
+		schema  map[string]any
+		payload any
 		errors  []gojsonschema.ResultError
-		want    jsonutils.JObject
+		want    map[string]any
 		wantErr error
 	}{
 		{
 			name: "No validation errors",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "value",
 			},
 			errors: []gojsonschema.ResultError{},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
 			},
 		},
 		{
 			name: "Key not in schema",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type":       "object",
-				"properties": jsonutils.JObject{},
-				"required":   []string{},
+				"properties": map[string]any{},
+				"required":   []any{},
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "value",
 			},
 			errors: []gojsonschema.ResultError{
 				buildError("additional_property_not_allowed", gojsonschema.NewJsonContext("key", nil), nil, "", "", nil),
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
 				},
-				"required": []string{"key"},
+				"required": []any{"key"},
 			},
 		},
 	}
@@ -338,94 +338,132 @@ func TestExpandSchema(t *testing.T) {
 func TestApplyPayload(t *testing.T) {
 	cases := []struct {
 		name    string
-		schema  jsonutils.JObject
-		payload jsonutils.J
-		want    jsonutils.JObject
+		schema  map[string]any
+		payload any
+		want    map[string]any
 	}{
 		{
 			name: "No changes",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
 			},
-			payload: jsonutils.JObject{},
+			payload: map[string]any{},
 		},
 		{
 			name: "Required not in schema",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
-					"key2": jsonutils.JObject{
+					"key2": map[string]any{
 						"type": "integer",
 					},
 				},
-				"required":             []string{"key"},
+				"required":             []any{"key"},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key2": 1,
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
-					"key2": jsonutils.JObject{
+					"key2": map[string]any{
 						"type": "integer",
 					},
 				},
-				"required":             []string{"key2"},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Required not in schema nested",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"k1": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"k2": map[string]any{
+								"type": "string",
+							},
+						},
+						"required": []any{"k2"},
+					},
+				},
+				"required":             []any{"k1"},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"k1": map[string]any{},
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"k1": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"k2": map[string]any{
+								"type": "string",
+							},
+						},
+						"required": []any{},
+					},
+				},
+				"required":             []any{"k1"},
 				"additionalProperties": false,
 			},
 		},
 		{
 			name: "Type Changed",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
 				},
-				"required":             []string{"key"},
+				"required":             []any{"key"},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": 1,
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
-						"type": []string{"string", "integer"},
+				"properties": map[string]any{
+					"key": map[string]any{
+						"type": []any{"string", "integer"},
 					},
 				},
 				"additionalProperties": false,
-				"required":             []string{"key"},
+				"required":             []any{"key"},
 			},
 		},
 		{
 			name: "MaxItems Exceeded",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":     "array",
 						"maxItems": 1,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
-				"key": jsonutils.JArray{"value", "value2"},
+			payload: map[string]any{
+				"key": []any{"value", "value2"},
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":     "array",
 						"maxItems": 2,
 					},
@@ -435,23 +473,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "MinItems Exceeded",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":     "array",
 						"minItems": 2,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
-				"key": jsonutils.JArray{"value"},
+			payload: map[string]any{
+				"key": []any{"value"},
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":     "array",
 						"minItems": 1,
 					},
@@ -461,23 +499,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Unique Items Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":        "array",
 						"uniqueItems": true,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
-				"key": jsonutils.JArray{"value", "value"},
+			payload: map[string]any{
+				"key": []any{"value", "value"},
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "array",
 					},
 				},
@@ -486,26 +524,26 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Contains Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":     "array",
-						"contains": jsonutils.JObject{"type": "string"},
+						"contains": map[string]any{"type": "string"},
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
-				"key": jsonutils.JArray{1, 2},
+			payload: map[string]any{
+				"key": []any{1, 2},
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "array",
-						"items": jsonutils.JObject{
-							"anyOf": []jsonutils.JObject{
+						"items": map[string]any{
+							"anyOf": []map[string]any{
 								{"type": "string"},
 								{"type": "integer"},
 							},
@@ -517,23 +555,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "String gte Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":      "string",
 						"minLength": 10,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "value",
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":      "string",
 						"minLength": 5,
 					},
@@ -543,23 +581,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "String lte Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":      "string",
 						"maxLength": 1,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "value",
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":      "string",
 						"maxLength": 5,
 					},
@@ -569,23 +607,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Pattern Not Matching",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":    "string",
 						"pattern": "ask.*",
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "answer",
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
 				},
@@ -594,23 +632,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Multiple Of Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":       "integer",
 						"multipleOf": 2,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": 3,
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "integer",
 					},
 				},
@@ -619,23 +657,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Maximum Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":    "integer",
 						"maximum": 2,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": 3,
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":    "integer",
 						"maximum": 3,
 					},
@@ -645,23 +683,23 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Exclusive Maximum Violated",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":             "integer",
 						"exclusiveMaximum": 2,
 					},
 				},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": 3,
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type":             "integer",
 						"exclusiveMaximum": 3,
 					},
@@ -671,30 +709,30 @@ func TestApplyPayload(t *testing.T) {
 		},
 		{
 			name: "Key Added",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type":                 "object",
-				"properties":           jsonutils.JObject{},
-				"required":             []string{},
+				"properties":           map[string]any{},
+				"required":             []any{},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": "value",
 			},
-			want: jsonutils.JObject{
+			want: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
 				},
 				"additionalProperties": false,
-				"required":             []string{"key"},
+				"required":             []any{},
 			},
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, err := jsonutils.ApplyPayload(c.schema, c.payload)
+			got, err := jsonutils.ApplyPayload(c.schema, c.payload, "")
 			if err != nil {
 				t.Fatalf("ApplyPayload(%v, %v) returned error %v", c.schema, c.payload, err)
 			}
@@ -708,33 +746,33 @@ func TestApplyPayload(t *testing.T) {
 func TestValidatePayload(t *testing.T) {
 	cases := []struct {
 		name    string
-		schema  jsonutils.JObject
-		payload jsonutils.J
+		schema  map[string]any
+		payload any
 		want    []gojsonschema.ResultError
 	}{
 		{
 			name: "No changes",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
 			},
-			payload: jsonutils.JObject{},
+			payload: map[string]any{},
 		},
 		{
 			name: "Required not in schema",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
-					"key2": jsonutils.JObject{
+					"key2": map[string]any{
 						"type": "integer",
 					},
 				},
-				"required":             []string{"key"},
+				"required":             []any{"key"},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key2": 1,
 			},
 			want: []gojsonschema.ResultError{
@@ -754,17 +792,17 @@ func TestValidatePayload(t *testing.T) {
 		},
 		{
 			name: "Type Changed",
-			schema: jsonutils.JObject{
+			schema: map[string]any{
 				"type": "object",
-				"properties": jsonutils.JObject{
-					"key": jsonutils.JObject{
+				"properties": map[string]any{
+					"key": map[string]any{
 						"type": "string",
 					},
 				},
-				"required":             []string{"key"},
+				"required":             []any{"key"},
 				"additionalProperties": false,
 			},
-			payload: jsonutils.JObject{
+			payload: map[string]any{
 				"key": 1,
 			},
 			want: []gojsonschema.ResultError{
