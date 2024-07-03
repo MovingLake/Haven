@@ -1,0 +1,25 @@
+version: '3'
+services:
+  gin-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=somesecret
+      - POSTGRES_DB=haven
+
+  postgres:
+    image: postgres:latest
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_PASSWORD=somesecret
+volumes:
+  postgres_data:
