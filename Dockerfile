@@ -6,6 +6,11 @@ RUN go mod download
 COPY . .
 RUN go build -o main .
 EXPOSE 8080
-ENV DB_STR "postgresql://postgres@host.docker.internal:5432/haven"
+ENV DB_NAME=postgres
+ENV DB_USER=postgres
+ENV DB_PASSWORD=postgres
+ENV DB_HOST=postgres
+ENV DB_PORT=5432
+ENV DB_SSLMODE=disable
 
 CMD ["./main"]
