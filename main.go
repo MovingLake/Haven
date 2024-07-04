@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -18,10 +19,13 @@ func main() {
 	}
 
 	// Get vars from env.
-	dbStr := os.Getenv("DB_STR")
-	if dbStr == "" {
-		log.Fatal("DB_STR not set")
-	}
+	dbName := os.Getenv("DB_NAME")
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+	dbStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", dbHost, dbPort, dbUser, dbName, dbPass, dbSSLMode)
 
 	// Create DB connection.
 	db, err := wrappers.NewDB(dbStr)

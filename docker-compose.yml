@@ -9,11 +9,12 @@ services:
     depends_on:
       - postgres
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=somesecret
-      - POSTGRES_DB=haven
+      - DB_NAME=haven
+      - DB_USER=postgres
+      - DB_PASSWORD=somesecret
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_SSLMODE=disable
 
   postgres:
     image: postgres:latest
