@@ -9,7 +9,6 @@ import (
 )
 
 func valueAt(ctx *gojsonschema.JsonContext, payload any) any {
-	fmt.Println("Traversal", ctx.Head(), ctx.Tail())
 	if ctx.Head() == "(root)" || ctx.Tail() == nil {
 		return payload
 	}

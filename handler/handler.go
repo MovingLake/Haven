@@ -155,7 +155,6 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		NewSchema:           string(newSchemaBytes),
 		Version:             r.Version,
 	}
-	fmt.Println(rv)
 
 	t.Save(rv)
 	t.Commit()
