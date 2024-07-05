@@ -54,7 +54,7 @@ func TestHealth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := handler.NewHavenHandler(db)
+	handler := handler.NewHavenHandler(db, &handler.NotificationsConfig{})
 	handler.RegisterRoutes(router)
 
 	// Create a response recorder to record the response
@@ -81,7 +81,7 @@ func TestAddPayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db)
+	h := handler.NewHavenHandler(db, nil)
 	h.RegisterRoutes(router)
 
 	cases := []struct {
@@ -205,7 +205,7 @@ func TestCruds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db)
+	h := handler.NewHavenHandler(db, nil)
 	h.RegisterRoutes(router)
 
 	recorder := httptest.NewRecorder()

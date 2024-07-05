@@ -36,7 +36,12 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	handler := handler.NewHavenHandler(db)
+	nc := &handler.NotificationsConfig{
+		SlackToken:     os.Getenv("SLACK_TOKEN"),
+		SlackChannelID: os.Getenv("SLACK_CHANNEL"),
+	}
+
+	handler := handler.NewHavenHandler(db, nc)
 
 	r := gin.Default()
 	handler.RegisterRoutes(r)
