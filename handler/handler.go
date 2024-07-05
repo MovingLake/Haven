@@ -10,6 +10,7 @@ import (
 	"github.com/andres-movl/gojsonschema"
 	"github.com/gin-gonic/gin"
 	"movinglake.com/haven/handler/jsonutils"
+	"movinglake.com/haven/handler/notifications"
 	"movinglake.com/haven/wrappers"
 )
 
@@ -17,13 +18,24 @@ import (
 
 // We need to hold DB connections.
 type HavenHandler struct {
-	db wrappers.DB
+	db      wrappers.DB
+	slacker notifications.Sender
 }
 
-func NewHavenHandler(db wrappers.DB) *HavenHandler {
-	return &HavenHandler{
+// NotificationsConfig holds the configuration for notifications.
+type NotificationsConfig struct {
+	SlackToken     string
+	SlackChannelID string
+}
+
+func NewHavenHandler(db wrappers.DB, nc *NotificationsConfig) *HavenHandler {
+	handler := &HavenHandler{
 		db: db,
 	}
+	if nc != nil {
+		handler.slacker = notifications.NewSlackSender(nc.SlackToken, nc.SlackChannelID)
+	}
+	return handler
 }
 
 type APIResponse struct {
@@ -86,7 +98,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	var request AddPayloadRequest
 	var response AddPayloadResponse
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
-		response.Error = err.Error()
+		response.Error = fmt.Sprintf("failed to parse json request: %v", err)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
@@ -114,7 +126,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 
 	if newSchema == nil {
 		// No changes to existing schema.
-		log.Printf("no changes to the schema for resource %v", r)
+		log.Printf("no changes to the schema for resource %v", request.Resource)
 		response.Success = true
 		c.JSON(http.StatusOK, response)
 		return
@@ -158,6 +170,18 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 
 	t.Save(rv)
 	t.Commit()
+	if h.slacker != nil && h.slacker.IsActive() {
+		log.Printf("sending slack message for new version of schema for resource %s", request.Resource)
+		err := h.slacker.SendMessage(
+			fmt.Sprintf("New version `%d` of schema for resource `%s` has been added",
+				r.Version,
+				request.Resource))
+		if err != nil {
+			log.Printf("failed to send slack message: %v", err)
+		}
+	} else {
+		log.Printf("slack not configured, skipping sending message for new version of schema for resource %s", request.Resource)
+	}
 	response.Success = true
 	c.JSON(http.StatusOK, response)
 }

@@ -8,8 +8,10 @@ require (
 )
 
 require (
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	github.com/slack-go/slack v0.13.0 // indirect
 )
 
 require (
