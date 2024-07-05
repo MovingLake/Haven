@@ -23,14 +23,17 @@ func main() {
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
 	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbSSLMode := os.Getenv("DB_SSLMODE")
-	dbStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", dbHost, dbPort, dbUser, dbName, dbPass, dbSSLMode)
+	dbStr := fmt.Sprintf("host=%s user=%s dbname=%s password=%s", dbHost, dbUser, dbName, dbPass)
 
 	// Create DB connection.
 	db, err := wrappers.NewDB(dbStr)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	gin_mode := os.Getenv("GIN_MODE")
+	if gin_mode != "" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	handler := handler.NewHavenHandler(db)
