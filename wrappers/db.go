@@ -1,7 +1,6 @@
 package wrappers
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -24,14 +23,12 @@ type Resource struct {
 // ResourceVersions table stores how the schema has evolved over time. It also references
 // the payload that triggered the new version.
 type ResourceVersions struct {
-	Version             uint `gorm:"primaryKey"`
+	gorm.Model
+	Version             uint
 	ResourceID          uint
 	ReferencePayloadsID uint
 	OldSchema           string
 	NewSchema           string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
-	DeletedAt           gorm.DeletedAt `gorm:"index"`
 }
 
 type ReferencePayloads struct {
@@ -44,10 +41,13 @@ type DB interface {
 	GetResource(resource string) (*Resource, error)
 	GetAllResources() ([]Resource, error)
 	GetResourceVersions(resourceID uint) ([]ResourceVersions, error)
-	GetReferencePayload(id uint) (ReferencePayloads, error)
+	GetReferencePayload(id uint) (*ReferencePayloads, error)
 	OpenTxn() *gorm.DB
 	TearDown() error
 	TruncateAll() error
+	Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (tx *gorm.DB)
+	Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB)
+	Commit(optTx *gorm.DB) *gorm.DB
 }
 
 type DBImpl struct {
@@ -90,11 +90,11 @@ func (d *DBImpl) OpenTxn() *gorm.DB {
 
 func (d *DBImpl) GetResource(resource string) (*Resource, error) {
 	r := &Resource{}
-	d.conn.Find(r, "name = ?", resource)
+	ret := d.conn.Find(r, "name = ?", resource)
 	if r.ID == 0 {
 		return nil, fmt.Errorf("resource not found for %s", resource)
 	}
-	return r, nil
+	return r, ret.Error
 }
 
 func (d *DBImpl) TearDown() error {
@@ -105,26 +105,44 @@ func (d *DBImpl) TruncateAll() error {
 	fmt.Println("Truncating tables")
 	tx := d.conn.Exec("TRUNCATE TABLE resources, reference_payloads, resource_versions;")
 	fmt.Println(tx.Error)
-	tx.Commit()
-	return nil
+	return tx.Commit().Error
 }
 
 func (d *DBImpl) GetAllResources() ([]Resource, error) {
 	var resources []Resource
-	d.conn.Find(&resources)
-	return resources, nil
+	ret := d.conn.Find(&resources)
+	return resources, ret.Error
 }
 
 func (d *DBImpl) GetResourceVersions(resourceID uint) ([]ResourceVersions, error) {
 	var versions []ResourceVersions
-	d.conn.Find(&versions)
-	str, _ := json.Marshal(versions)
-	fmt.Println(string(str))
-	return versions, nil
+	ret := d.conn.Find(&versions, "resource_id = ?", resourceID)
+	return versions, ret.Error
 }
 
-func (d *DBImpl) GetReferencePayload(id uint) (ReferencePayloads, error) {
-	var payload ReferencePayloads
-	d.conn.Find(&payload, "id = ?", id)
-	return payload, nil
+func (d *DBImpl) GetReferencePayload(id uint) (*ReferencePayloads, error) {
+	payload := &ReferencePayloads{}
+	ret := d.conn.Find(payload, "id = ?", id)
+	return payload, ret.Error
+}
+
+func (d *DBImpl) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (tx *gorm.DB) {
+	if optTx == nil {
+		return d.conn.Find(dest, conds...)
+	}
+	return optTx.Find(dest, conds...)
+}
+
+func (d *DBImpl) Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB) {
+	if optTx == nil {
+		return d.conn.Save(value)
+	}
+	return optTx.Save(value)
+}
+
+func (d *DBImpl) Commit(optTx *gorm.DB) *gorm.DB {
+	if optTx == nil {
+		return d.conn.Commit()
+	}
+	return optTx.Commit()
 }

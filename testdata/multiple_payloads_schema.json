@@ -3,631 +3,631 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
-      "_id": {
-        "type": "string"
-      },
-      "accountId": {
-        "type": "string"
-      },
-      "cancellationPolicy": {
-        "type": "string"
-      },
-      "checkIn": {
-        "type": "string"
-      },
-      "checkInDateLocalized": {
-        "type": "string"
-      },
-      "checkOut": {
-        "type": "string"
-      },
-      "checkOutDateLocalized": {
-        "type": "string"
-      },
-      "confirmationCode": {
-        "type": "string"
-      },
-      "confirmedAt": {
-        "type": "string"
-      },
-      "createdAt": {
-        "type": "string"
-      },
-      "created_at": {
-        "type": "string"
-      },
-      "created_by": {
-        "type": "number"
-      },
-      "customFields": {
-        "type": "array"
-      },
-      "data": {
-        "properties": {
-          "id": {
+        "_id": {
+            "type": "string"
+        },
+        "accountId": {
+            "type": "string"
+        },
+        "cancellationPolicy": {
+            "type": "string"
+        },
+        "checkIn": {
+            "type": "string"
+        },
+        "checkInDateLocalized": {
+            "type": "string"
+        },
+        "checkOut": {
+            "type": "string"
+        },
+        "checkOutDateLocalized": {
+            "type": "string"
+        },
+        "confirmationCode": {
+            "type": "string"
+        },
+        "confirmedAt": {
+            "type": "string"
+        },
+        "createdAt": {
+            "type": "string"
+        },
+        "created_at": {
+            "type": "string"
+        },
+        "created_by": {
             "type": "number"
-          },
-          "name": {
-            "type": "string"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
+        },
+        "customFields": {
             "type": "array"
-          }
         },
-        "required": [
-          "id",
-          "name",
-          "tags"
-        ],
-        "type": "object"
-      },
-      "daysInAdvance": {
-        "type": "number"
-      },
-      "deleted_at": {
-        "type": "null"
-      },
-      "description": {
-        "type": "string"
-      },
-      "guest": {
-        "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "fullName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "_id",
-          "firstName",
-          "fullName"
-        ],
-        "type": "object"
-      },
-      "guestId": {
-        "type": "string"
-      },
-      "guestsCount": {
-        "type": "number"
-      },
-      "integration": {
-        "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "airbnb2": {
+        "data": {
             "properties": {
-              "id": {
-                "type": "string"
-              },
-              "status": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "status"
-            ],
-            "type": "object"
-          },
-          "bookingCom": {
-            "properties": {
-              "invalidCreditCards": {
-                "type": "array"
-              },
-              "reports": {
-                "type": "array"
-              }
-            },
-            "required": [
-              "invalidCreditCards",
-              "reports"
-            ],
-            "type": "object"
-          },
-          "limitations": {
-            "properties": {
-              "availableStatuses": {
-                "type": "array"
-              }
-            },
-            "required": [
-              "availableStatuses"
-            ],
-            "type": "object"
-          },
-          "platform": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "_id",
-          "bookingCom",
-          "limitations",
-          "platform"
-        ],
-        "type": "object"
-      },
-      "isReturningGuest": {
-        "type": "boolean"
-      },
-      "keyCode": {
-        "type": "string"
-      },
-      "listing": {
-        "properties": {
-          "_id": {
-            "type": "string"
-          },
-          "address": {
-            "properties": {
-              "full": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "full"
-            ],
-            "type": "object"
-          },
-          "nickname": {
-            "type": "string"
-          },
-          "picture": {
-            "properties": {
-              "thumbnail": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "thumbnail"
-            ],
-            "type": "object"
-          },
-          "prices": {
-            "properties": {
-              "currency": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "currency"
-            ],
-            "type": "object"
-          },
-          "timezone": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "_id",
-          "address",
-          "nickname",
-          "picture",
-          "prices",
-          "timezone",
-          "title",
-          "type"
-        ],
-        "type": "object"
-      },
-      "listingId": {
-        "type": "string"
-      },
-      "log": {
-        "items": {
-          "properties": {
-            "__v": {
-              "type": "number"
-            },
-            "_id": {
-              "type": "string"
-            },
-            "at": {
-              "type": "string"
-            },
-            "by": {
-              "type": "string"
-            },
-            "changes": {
-              "items": {
-                "properties": {
-                  "diff": {
+                "id": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
                     "items": {
-                      "properties": {
-                        "added": {
-                          "type": "boolean"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "value"
-                      ],
-                      "type": "object"
+                        "type": "string"
                     },
                     "type": "array"
-                  },
-                  "field": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "diff",
-                  "field"
-                ],
-                "type": "object"
-              },
-              "type": "array"
+                }
             },
-            "event": {
-              "type": "string"
-            },
-            "reservationId": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "__v",
-            "_id",
-            "at",
-            "changes",
-            "event",
-            "reservationId"
-          ],
-          "type": "object"
+            "required": [
+                "id",
+                "name",
+                "tags"
+            ],
+            "type": "object"
         },
-        "type": "array"
-      },
-      "manuallyCreated": {
-        "type": "boolean"
-      },
-      "money": {
-        "properties": {
-          "_id": {
+        "daysInAdvance": {
+            "type": "number"
+        },
+        "deleted_at": {
+            "type": "null"
+        },
+        "description": {
             "type": "string"
-          },
-          "altered": {
-            "type": "boolean"
-          },
-          "autoPaymentsPolicy": {
-            "type": "array"
-          },
-          "balanceDue": {
-            "type": "number"
-          },
-          "commission": {
-            "type": "number"
-          },
-          "commissionFormula": {
-            "type": "string"
-          },
-          "commissionIncTax": {
-            "type": "number"
-          },
-          "commissionTax": {
-            "type": "number"
-          },
-          "commissionTaxPercentage": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "currencyConversionRateToAccount": {
-            "type": "number"
-          },
-          "fareAccommodation": {
-            "type": "number"
-          },
-          "fareAccommodationAdjusted": {
-            "type": "number"
-          },
-          "fareAccommodationAdjustment": {
-            "type": "number"
-          },
-          "fareAccommodationDiscount": {
-            "type": "number"
-          },
-          "fareCleaning": {
-            "type": "number"
-          },
-          "hostOriginalPayout": {
-            "type": "number"
-          },
-          "hostPayout": {
-            "type": "number"
-          },
-          "hostPayoutUsd": {
-            "type": "number"
-          },
-          "hostServiceFee": {
-            "type": "number"
-          },
-          "hostServiceFeeIncTax": {
-            "type": "number"
-          },
-          "hostServiceFeeTax": {
-            "type": "number"
-          },
-          "invoiceItems": {
-            "items": {
-              "properties": {
+        },
+        "guest": {
+            "properties": {
                 "_id": {
-                  "type": "string"
+                    "type": "string"
                 },
-                "amount": {
-                  "type": "number"
+                "email": {
+                    "type": "string"
                 },
-                "currency": {
-                  "type": "string"
+                "firstName": {
+                    "type": "string"
                 },
-                "isLocked": {
-                  "type": "boolean"
+                "fullName": {
+                    "type": "string"
                 },
-                "normalType": {
-                  "type": "string"
+                "lastName": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "_id",
+                "firstName",
+                "fullName"
+            ],
+            "type": "object"
+        },
+        "guestId": {
+            "type": "string"
+        },
+        "guestsCount": {
+            "type": "number"
+        },
+        "integration": {
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "airbnb2": {
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "status"
+                    ],
+                    "type": "object"
+                },
+                "bookingCom": {
+                    "properties": {
+                        "invalidCreditCards": {
+                            "type": "array"
+                        },
+                        "reports": {
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "invalidCreditCards",
+                        "reports"
+                    ],
+                    "type": "object"
+                },
+                "limitations": {
+                    "properties": {
+                        "availableStatuses": {
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "availableStatuses"
+                    ],
+                    "type": "object"
+                },
+                "platform": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "_id",
+                "bookingCom",
+                "limitations",
+                "platform"
+            ],
+            "type": "object"
+        },
+        "isReturningGuest": {
+            "type": "boolean"
+        },
+        "keyCode": {
+            "type": "string"
+        },
+        "listing": {
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "address": {
+                    "properties": {
+                        "full": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "full"
+                    ],
+                    "type": "object"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "picture": {
+                    "properties": {
+                        "thumbnail": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "thumbnail"
+                    ],
+                    "type": "object"
+                },
+                "prices": {
+                    "properties": {
+                        "currency": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "currency"
+                    ],
+                    "type": "object"
+                },
+                "timezone": {
+                    "type": "string"
                 },
                 "title": {
-                  "type": "string"
+                    "type": "string"
                 },
                 "type": {
-                  "type": "string"
+                    "type": "string"
                 }
-              },
-              "required": [
+            },
+            "required": [
                 "_id",
-                "amount",
-                "currency",
-                "isLocked",
-                "normalType",
+                "address",
+                "nickname",
+                "picture",
+                "prices",
+                "timezone",
                 "title",
                 "type"
-              ],
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "isFullyPaid": {
-            "type": "boolean"
-          },
-          "netIncome": {
-            "type": "number"
-          },
-          "netIncomeFormula": {
+            ],
+            "type": "object"
+        },
+        "listingId": {
             "type": "string"
-          },
-          "ownerRevenue": {
-            "type": "number"
-          },
-          "ownerRevenueFormula": {
-            "type": "string"
-          },
-          "paymentProviderIds": {
+        },
+        "log": {
             "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "payments": {
-            "items": {
-              "properties": {
-                "_id": {
-                  "type": "string"
-                },
-                "amount": {
-                  "type": "number"
-                },
-                "attempts": {
-                  "type": "array"
-                },
-                "authorizationHoldCaptures": {
-                  "type": "array"
-                },
-                "chargebacksData": {
-                  "properties": {
-                    "chargebacks": {
-                      "type": "array"
+                "properties": {
+                    "__v": {
+                        "type": "number"
+                    },
+                    "_id": {
+                        "type": "string"
+                    },
+                    "at": {
+                        "type": "string"
+                    },
+                    "by": {
+                        "type": "string"
+                    },
+                    "changes": {
+                        "items": {
+                            "properties": {
+                                "diff": {
+                                    "items": {
+                                        "properties": {
+                                            "added": {
+                                                "type": "boolean"
+                                            },
+                                            "value": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                },
+                                "field": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "diff",
+                                "field"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "event": {
+                        "type": "string"
+                    },
+                    "reservationId": {
+                        "type": "string"
                     }
-                  },
-                  "required": [
-                    "chargebacks"
-                  ],
-                  "type": "object"
                 },
-                "createdAt": {
-                  "type": "string"
+                "required": [
+                    "__v",
+                    "_id",
+                    "at",
+                    "changes",
+                    "event",
+                    "reservationId"
+                ],
+                "type": "object"
+            },
+            "type": "array"
+        },
+        "manuallyCreated": {
+            "type": "boolean"
+        },
+        "money": {
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "altered": {
+                    "type": "boolean"
+                },
+                "autoPaymentsPolicy": {
+                    "type": "array"
+                },
+                "balanceDue": {
+                    "type": "number"
+                },
+                "commission": {
+                    "type": "number"
+                },
+                "commissionFormula": {
+                    "type": "string"
+                },
+                "commissionIncTax": {
+                    "type": "number"
+                },
+                "commissionTax": {
+                    "type": "number"
+                },
+                "commissionTaxPercentage": {
+                    "type": "number"
                 },
                 "currency": {
-                  "type": "string"
+                    "type": "string"
                 },
-                "guestId": {
-                  "type": "string"
+                "currencyConversionRateToAccount": {
+                    "type": "number"
                 },
-                "isAuthorizationHold": {
-                  "type": "boolean"
+                "fareAccommodation": {
+                    "type": "number"
                 },
-                "paidAt": {
-                  "type": "string"
+                "fareAccommodationAdjusted": {
+                    "type": "number"
                 },
-                "paymentMethodId": {
-                  "type": "string"
+                "fareAccommodationAdjustment": {
+                    "type": "number"
                 },
-                "paymentMethodStatus": {
-                  "type": "string"
+                "fareAccommodationDiscount": {
+                    "type": "number"
                 },
-                "receiptId": {
-                  "type": "number"
+                "fareCleaning": {
+                    "type": "number"
                 },
-                "receiptTargets": {
-                  "type": "array"
+                "hostOriginalPayout": {
+                    "type": "number"
                 },
-                "refunds": {
-                  "type": "array"
+                "hostPayout": {
+                    "type": "number"
                 },
-                "shouldBePaidAt": {
-                  "type": "string"
+                "hostPayoutUsd": {
+                    "type": "number"
                 },
-                "status": {
-                  "type": "string"
+                "hostServiceFee": {
+                    "type": "number"
+                },
+                "hostServiceFeeIncTax": {
+                    "type": "number"
+                },
+                "hostServiceFeeTax": {
+                    "type": "number"
+                },
+                "invoiceItems": {
+                    "items": {
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "isLocked": {
+                                "type": "boolean"
+                            },
+                            "normalType": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "_id",
+                            "amount",
+                            "currency",
+                            "isLocked",
+                            "normalType",
+                            "title",
+                            "type"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "isFullyPaid": {
+                    "type": "boolean"
+                },
+                "netIncome": {
+                    "type": "number"
+                },
+                "netIncomeFormula": {
+                    "type": "string"
+                },
+                "ownerRevenue": {
+                    "type": "number"
+                },
+                "ownerRevenueFormula": {
+                    "type": "string"
+                },
+                "paymentProviderIds": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "payments": {
+                    "items": {
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "number"
+                            },
+                            "attempts": {
+                                "type": "array"
+                            },
+                            "authorizationHoldCaptures": {
+                                "type": "array"
+                            },
+                            "chargebacksData": {
+                                "properties": {
+                                    "chargebacks": {
+                                        "type": "array"
+                                    }
+                                },
+                                "required": [
+                                    "chargebacks"
+                                ],
+                                "type": "object"
+                            },
+                            "createdAt": {
+                                "type": "string"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "guestId": {
+                                "type": "string"
+                            },
+                            "isAuthorizationHold": {
+                                "type": "boolean"
+                            },
+                            "paidAt": {
+                                "type": "string"
+                            },
+                            "paymentMethodId": {
+                                "type": "string"
+                            },
+                            "paymentMethodStatus": {
+                                "type": "string"
+                            },
+                            "receiptId": {
+                                "type": "number"
+                            },
+                            "receiptTargets": {
+                                "type": "array"
+                            },
+                            "refunds": {
+                                "type": "array"
+                            },
+                            "shouldBePaidAt": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "_id",
+                            "amount",
+                            "attempts",
+                            "authorizationHoldCaptures",
+                            "chargebacksData",
+                            "createdAt",
+                            "currency",
+                            "guestId",
+                            "isAuthorizationHold",
+                            "paidAt",
+                            "paymentMethodId",
+                            "paymentMethodStatus",
+                            "receiptId",
+                            "receiptTargets",
+                            "refunds",
+                            "shouldBePaidAt",
+                            "status"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "paymentsDue": {
+                    "type": "number"
+                },
+                "subTotalPrice": {
+                    "type": "number"
+                },
+                "totalFees": {
+                    "type": "number"
+                },
+                "totalPaid": {
+                    "type": "number"
+                },
+                "totalRefunded": {
+                    "type": "number"
+                },
+                "totalTaxes": {
+                    "type": "number"
+                },
+                "transientOccupancyTax": {
+                    "type": "number"
+                },
+                "useAccountRevenueShare": {
+                    "type": "boolean"
                 }
-              },
-              "required": [
-                "_id",
-                "amount",
-                "attempts",
-                "authorizationHoldCaptures",
-                "chargebacksData",
-                "createdAt",
-                "currency",
-                "guestId",
-                "isAuthorizationHold",
-                "paidAt",
-                "paymentMethodId",
-                "paymentMethodStatus",
-                "receiptId",
-                "receiptTargets",
-                "refunds",
-                "shouldBePaidAt",
-                "status"
-              ],
-              "type": "object"
             },
+            "required": [
+                "altered",
+                "autoPaymentsPolicy",
+                "balanceDue",
+                "commission",
+                "commissionFormula",
+                "commissionIncTax",
+                "commissionTax",
+                "commissionTaxPercentage",
+                "currency",
+                "fareAccommodation",
+                "fareAccommodationAdjusted",
+                "fareAccommodationAdjustment",
+                "fareAccommodationDiscount",
+                "fareCleaning",
+                "hostPayout",
+                "hostPayoutUsd",
+                "hostServiceFee",
+                "hostServiceFeeIncTax",
+                "hostServiceFeeTax",
+                "invoiceItems",
+                "isFullyPaid",
+                "netIncome",
+                "netIncomeFormula",
+                "ownerRevenue",
+                "ownerRevenueFormula",
+                "paymentProviderIds",
+                "payments",
+                "paymentsDue",
+                "subTotalPrice",
+                "totalPaid",
+                "totalRefunded",
+                "totalTaxes",
+                "useAccountRevenueShare"
+            ],
+            "type": "object"
+        },
+        "name": {
+            "type": "string"
+        },
+        "nightsCount": {
+            "type": "number"
+        },
+        "pendingTasks": {
             "type": "array"
-          },
-          "paymentsDue": {
-            "type": "number"
-          },
-          "subTotalPrice": {
-            "type": "number"
-          },
-          "totalFees": {
-            "type": "number"
-          },
-          "totalPaid": {
-            "type": "number"
-          },
-          "totalRefunded": {
-            "type": "number"
-          },
-          "totalTaxes": {
-            "type": "number"
-          },
-          "transientOccupancyTax": {
-            "type": "number"
-          },
-          "useAccountRevenueShare": {
-            "type": "boolean"
-          }
         },
-        "required": [
-          "altered",
-          "autoPaymentsPolicy",
-          "balanceDue",
-          "commission",
-          "commissionFormula",
-          "commissionIncTax",
-          "commissionTax",
-          "commissionTaxPercentage",
-          "currency",
-          "fareAccommodation",
-          "fareAccommodationAdjusted",
-          "fareAccommodationAdjustment",
-          "fareAccommodationDiscount",
-          "fareCleaning",
-          "hostPayout",
-          "hostPayoutUsd",
-          "hostServiceFee",
-          "hostServiceFeeIncTax",
-          "hostServiceFeeTax",
-          "invoiceItems",
-          "isFullyPaid",
-          "netIncome",
-          "netIncomeFormula",
-          "ownerRevenue",
-          "ownerRevenueFormula",
-          "paymentProviderIds",
-          "payments",
-          "paymentsDue",
-          "subTotalPrice",
-          "totalPaid",
-          "totalRefunded",
-          "totalTaxes",
-          "useAccountRevenueShare"
-        ],
-        "type": "object"
-      },
-      "name": {
-        "type": "string"
-      },
-      "nightsCount": {
-        "type": "number"
-      },
-      "pendingTasks": {
-        "type": "array"
-      },
-      "preApproveState": {
-        "type": "boolean"
-      },
-      "price": {
-        "type": "number"
-      },
-      "review": {
-        "properties": {
-          "shouldReview": {
+        "preApproveState": {
             "type": "boolean"
-          }
         },
-        "required": [
-          "shouldReview"
-        ],
-        "type": "object"
-      },
-      "source": {
-        "type": "string"
-      },
-      "status": {
-        "type": [
-          "number",
-          "string"
-        ]
-      },
-      "type": {
-        "type": "string"
-      },
-      "updated_at": {
-        "type": "string"
-      },
-      "updated_by": {
-        "type": "number"
-      }
+        "price": {
+            "type": "number"
+        },
+        "review": {
+            "properties": {
+                "shouldReview": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "shouldReview"
+            ],
+            "type": "object"
+        },
+        "source": {
+            "type": "string"
+        },
+        "status": {
+            "type": [
+                "number",
+                "string"
+            ]
+        },
+        "type": {
+            "type": "string"
+        },
+        "updated_at": {
+            "type": "string"
+        },
+        "updated_by": {
+            "type": "number"
+        }
     },
     "required": [
-      "status"
+        "status"
     ],
     "title": "test",
     "type": "object"
-  }
+}

@@ -47,9 +47,17 @@ type AddPayloadRequest struct {
 	Payload  interface{} `json:"payload"`
 }
 
+type ResourceResp struct {
+	ID      uint   `json:"id"`
+	Name    string `json:"name"`
+	Schema  string `json:"schema"`
+	Version uint   `json:"version"`
+}
+
 type AddPayloadResponse struct {
 	APIResponse
-	Success bool `json:"success"`
+	Success  bool         `json:"success"`
+	Resource ResourceResp `json:"resource"`
 }
 
 type ValidatePayloadRequest struct {
@@ -75,21 +83,32 @@ type SetSchemaRequest struct {
 
 type SetSchemaResponse struct {
 	APIResponse
-	Success bool `json:"success"`
+	Resource ResourceResp `json:"resource"`
+	Success  bool         `json:"success"`
 }
 
 type GetAllResourcesResponse struct {
 	APIResponse
-	Resources []wrappers.Resource `json:"resources"`
+	Resources []ResourceResp `json:"resources"`
+}
+
+type ResourceVersionsResponse struct {
+	ID                  uint   `json:"id"`
+	Version             uint   `json:"version"`
+	ResourceID          uint   `json:"resource_id"`
+	ReferencePayloadsID uint   `json:"reference_payloads_id"`
+	OldSchema           string `json:"old_schema"`
+	NewSchema           string `json:"new_schema"`
 }
 
 type GetResourceVersionsResponse struct {
 	APIResponse
-	Versions []wrappers.ResourceVersions `json:"versions"`
+	Versions []ResourceVersionsResponse `json:"versions"`
 }
 
 type GetReferencePayloadResponse struct {
 	APIResponse
+	ID      uint        `json:"id"`
 	Payload interface{} `json:"payload"`
 }
 
@@ -106,7 +125,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	// Get the schema of the resource.
 	t := h.db.OpenTxn()
 	r := &wrappers.Resource{}
-	t.Find(r, "name = ?", request.Resource)
+	h.db.Find(r, t, "name = ?", request.Resource)
 
 	schema := make(map[string]interface{})
 	if r.ID != 0 {
@@ -144,7 +163,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	oldSchema := r.Schema
 	r.Schema = string(newSchemaBytes)
 	r.Name = request.Resource
-	t.Save(r)
+	h.db.Save(r, t)
 
 	// Save the reference payload.
 	payloadBytes, err := json.Marshal(request.Payload)
@@ -157,7 +176,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		ResourceID: r.ID,
 		Payload:    string(payloadBytes),
 	}
-	t.Save(refPayload)
+	h.db.Save(refPayload, t)
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
@@ -168,8 +187,13 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		Version:             r.Version,
 	}
 
-	t.Save(rv)
-	t.Commit()
+	h.db.Save(rv, t)
+	res := h.db.Commit(t)
+	if res.Error != nil {
+		response.Error = fmt.Sprintf("failed to commit transaction: %v", res.Error)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 	if h.slacker != nil && h.slacker.IsActive() {
 		log.Printf("sending slack message for new version of schema for resource %s", request.Resource)
 		err := h.slacker.SendMessage(
@@ -183,6 +207,12 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		log.Printf("slack not configured, skipping sending message for new version of schema for resource %s", request.Resource)
 	}
 	response.Success = true
+	response.Resource = ResourceResp{
+		ID:      r.ID,
+		Name:    r.Name,
+		Schema:  r.Schema,
+		Version: r.Version,
+	}
 	c.JSON(http.StatusOK, response)
 }
 
@@ -298,7 +328,7 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 			Version: 1,
 		}
 		t := h.db.OpenTxn()
-		t.Save(res)
+		h.db.Save(res, t)
 
 		// Save the new version.
 		rv := &wrappers.ResourceVersions{
@@ -308,8 +338,13 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 			NewSchema:           res.Schema,
 			Version:             res.Version,
 		}
-		t.Save(rv)
-		t.Commit()
+		h.db.Save(rv, t)
+		res := h.db.Commit(t)
+		if res.Error != nil {
+			response.Error = fmt.Sprintf("failed to commit transaction: %v", res.Error)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
 		response.Success = true
 		c.JSON(http.StatusOK, response)
 		return
@@ -324,7 +359,7 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 	res.Schema = string(schemaBytes)
 	res.Version += 1
 	t := h.db.OpenTxn()
-	t.Save(res)
+	h.db.Save(res, t)
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
@@ -334,9 +369,20 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 		NewSchema:           res.Schema,
 		Version:             res.Version,
 	}
-	t.Save(rv)
-	t.Commit()
+	h.db.Save(rv, t)
+	result := h.db.Commit(t)
+	if result.Error != nil {
+		response.Error = fmt.Sprintf("failed to commit transaction: %v", result.Error)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 	response.Success = true
+	response.Resource = ResourceResp{
+		ID:      res.ID,
+		Name:    res.Name,
+		Schema:  res.Schema,
+		Version: res.Version,
+	}
 	c.JSON(http.StatusOK, response)
 }
 
@@ -349,7 +395,13 @@ func (h *HavenHandler) getResources(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-	response.Resources = resources
+	for _, r := range resources {
+		response.Resources = append(response.Resources, ResourceResp{
+			Name:    r.Name,
+			Schema:  r.Schema,
+			Version: r.Version,
+		})
+	}
 	c.JSON(http.StatusOK, response)
 }
 
@@ -369,7 +421,15 @@ func (h *HavenHandler) getResourceVersions(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-	response.Versions = versions
+	for _, v := range versions {
+		response.Versions = append(response.Versions, ResourceVersionsResponse{
+			Version:             v.Version,
+			ResourceID:          v.ResourceID,
+			ReferencePayloadsID: v.ReferencePayloadsID,
+			OldSchema:           v.OldSchema,
+			NewSchema:           v.NewSchema,
+		})
+	}
 	c.JSON(http.StatusOK, response)
 }
 
