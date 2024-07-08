@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -285,6 +286,13 @@ func TestCruds(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
 	}
+	var setSchemaResponse handler.SetSchemaResponse
+	if err := json.NewDecoder(recorder.Body).Decode(&setSchemaResponse); err != nil {
+		t.Fatal(err)
+	}
+	if setSchemaResponse.Error != "" || setSchemaResponse.Success != true {
+		t.Fatalf("Expected no error but got %s", setSchemaResponse.Error)
+	}
 
 	// Get all resources.
 	recorder = httptest.NewRecorder()
@@ -301,12 +309,12 @@ func TestCruds(t *testing.T) {
 		t.Fatalf("Expected no error but got %s", allResp.Error)
 	}
 	if len(allResp.Resources) != 2 {
-		t.Fatalf("Expected 2 resources but got %d", len(allResp.Resources))
+		t.Fatalf("Expected 2 resources but got %v", allResp.Resources)
 	}
 
 	// Get all versions of a resource.
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_resource_versions/1", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_resource_versions/"+strconv.Itoa(int(addPayloadResponse.Resource.ID)), nil)
 	router.ServeHTTP(recorder, req)
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
@@ -319,7 +327,7 @@ func TestCruds(t *testing.T) {
 		t.Fatalf("Expected no error but got %s", versionsResp.Error)
 	}
 	if len(versionsResp.Versions) != 2 {
-		t.Fatalf("Expected 2 versions but got %d", len(versionsResp.Versions))
+		t.Fatalf("Expected 2 versions but got %v", versionsResp)
 	}
 
 	// Get a reference payload.
