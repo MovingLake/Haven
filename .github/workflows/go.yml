@@ -24,6 +24,7 @@ jobs:
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: root
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -40,7 +41,7 @@ jobs:
         apk --update add postgresql-client
       
     - name: Query database
-      run: psql -h postgres -d postgres -U postgres -c 'CREATE DATABASE haventest;'
+      run: psql -h postgres -d postgres -U root -c 'CREATE DATABASE haventest;'
       env:
         # postgress password is required; alternatively, you can run:
         # `PGPASSWORD=postgres_password psql ...`
@@ -58,9 +59,4 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      env:
-        DB_USER: postgres
-        DB_PASS: postgres
-        DB_NAME: postgres
-        DB_HOST: localhost
       run: go test -v ./...
