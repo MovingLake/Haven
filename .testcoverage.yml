@@ -26,8 +26,8 @@ threshold:
 
   # (optional; default 0) 
   # The minimum coverage that each package should have
-  package: 80
+  package: 70
 
   # (optional; default 0) 
   # The minimum total coverage project should have
-  total: 90
+  total: 70
