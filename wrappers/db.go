@@ -45,9 +45,9 @@ type DB interface {
 	OpenTxn() *gorm.DB
 	TearDown() error
 	TruncateAll() error
-	Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (tx *gorm.DB)
-	Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB)
-	Commit(optTx *gorm.DB) *gorm.DB
+	Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error
+	Save(value interface{}, optTx *gorm.DB) error
+	Commit(optTx *gorm.DB) error
 }
 
 type DBImpl struct {
@@ -126,23 +126,29 @@ func (d *DBImpl) GetReferencePayload(id uint) (*ReferencePayloads, error) {
 	return payload, ret.Error
 }
 
-func (d *DBImpl) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (tx *gorm.DB) {
+func (d *DBImpl) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error {
 	if optTx == nil {
-		return d.conn.Find(dest, conds...)
+		res := d.conn.Find(dest, conds...)
+		return res.Error
 	}
-	return optTx.Find(dest, conds...)
+	res := optTx.Find(dest, conds...)
+	return res.Error
 }
 
-func (d *DBImpl) Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB) {
+func (d *DBImpl) Save(value interface{}, optTx *gorm.DB) error {
 	if optTx == nil {
-		return d.conn.Save(value)
+		res := d.conn.Save(value)
+		return res.Error
 	}
-	return optTx.Save(value)
+	res := optTx.Save(value)
+	return res.Error
 }
 
-func (d *DBImpl) Commit(optTx *gorm.DB) *gorm.DB {
+func (d *DBImpl) Commit(optTx *gorm.DB) error {
 	if optTx == nil {
-		return d.conn.Commit()
+		res := d.conn.Commit()
+		return res.Error
 	}
-	return optTx.Commit()
+	res := optTx.Commit()
+	return res.Error
 }

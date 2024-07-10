@@ -65,12 +65,12 @@ func (d *TestDB) GetResourceVersions(resourceID uint) ([]ResourceVersions, error
 func (d *TestDB) GetReferencePayload(id uint) (*ReferencePayloads, error) {
 	rp, ok := d.ReferencePayloads[id]
 	if !ok {
-		return nil, fmt.Errorf("reference payload not found for %d", id)
+		return nil, nil
 	}
 	return &rp, nil
 }
 
-func (d *TestDB) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (tx *gorm.DB) {
+func (d *TestDB) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error {
 	switch dest := dest.(type) {
 	case *Resource:
 		r, ok := d.Resource[conds[1].(string)]
@@ -98,7 +98,7 @@ func (d *TestDB) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) (t
 	return nil
 }
 
-func (d *TestDB) Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB) {
+func (d *TestDB) Save(value interface{}, optTx *gorm.DB) error {
 	switch value := value.(type) {
 	case *Resource:
 		d.Resource[value.Name] = *value
@@ -112,6 +112,6 @@ func (d *TestDB) Save(value interface{}, optTx *gorm.DB) (tx *gorm.DB) {
 	return nil
 }
 
-func (d *TestDB) Commit(optTx *gorm.DB) *gorm.DB {
+func (d *TestDB) Commit(optTx *gorm.DB) error {
 	return nil
 }

@@ -340,7 +340,7 @@ func TestCruds(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_resource_versions/"+strconv.Itoa(int(addPayloadResponse.Resource.ID)), nil)
 	router.ServeHTTP(recorder, req)
 	if recorder.Code != http.StatusOK {
-		t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+		t.Fatalf("Expected status code %d but got %d %v", http.StatusOK, recorder.Code, recorder.Body)
 	}
 	var versionsResp handler.GetResourceVersionsResponse
 	if err := json.NewDecoder(recorder.Body).Decode(&versionsResp); err != nil {

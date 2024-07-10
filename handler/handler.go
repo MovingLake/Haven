@@ -48,10 +48,10 @@ type AddPayloadRequest struct {
 }
 
 type ResourceResp struct {
-	ID      uint   `json:"id"`
-	Name    string `json:"name"`
-	Schema  string `json:"schema"`
-	Version uint   `json:"version"`
+	ID      uint           `json:"id"`
+	Name    string         `json:"name"`
+	Schema  map[string]any `json:"schema"`
+	Version uint           `json:"version"`
 }
 
 type AddPayloadResponse struct {
@@ -93,12 +93,12 @@ type GetAllResourcesResponse struct {
 }
 
 type ResourceVersionsResponse struct {
-	ID                  uint   `json:"id"`
-	Version             uint   `json:"version"`
-	ResourceID          uint   `json:"resource_id"`
-	ReferencePayloadsID uint   `json:"reference_payloads_id"`
-	OldSchema           string `json:"old_schema"`
-	NewSchema           string `json:"new_schema"`
+	ID                  uint           `json:"id"`
+	Version             uint           `json:"version"`
+	ResourceID          uint           `json:"resource_id"`
+	ReferencePayloadsID uint           `json:"reference_payloads_id"`
+	OldSchema           map[string]any `json:"old_schema"`
+	NewSchema           map[string]any `json:"new_schema"`
 }
 
 type GetResourceVersionsResponse struct {
@@ -125,7 +125,11 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	// Get the schema of the resource.
 	t := h.db.OpenTxn()
 	r := &wrappers.Resource{}
-	h.db.Find(r, t, "name = ?", request.Resource)
+	if err := h.db.Find(r, t, "name = ?", request.Resource); err != nil {
+		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
 
 	schema := make(map[string]interface{})
 	if r.ID != 0 {
@@ -163,7 +167,11 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	oldSchema := r.Schema
 	r.Schema = string(newSchemaBytes)
 	r.Name = request.Resource
-	h.db.Save(r, t)
+	if err := h.db.Save(r, t); err != nil {
+		response.Error = fmt.Sprintf("failed to save new schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 
 	// Save the reference payload.
 	payloadBytes, err := json.Marshal(request.Payload)
@@ -176,7 +184,11 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		ResourceID: r.ID,
 		Payload:    string(payloadBytes),
 	}
-	h.db.Save(refPayload, t)
+	if err := h.db.Save(refPayload, t); err != nil {
+		response.Error = fmt.Sprintf("failed to save reference payload: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
@@ -187,10 +199,13 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		Version:             r.Version,
 	}
 
-	h.db.Save(rv, t)
-	res := h.db.Commit(t)
-	if res.Error != nil {
-		response.Error = fmt.Sprintf("failed to commit transaction: %v", res.Error)
+	if err := h.db.Save(rv, t); err != nil {
+		response.Error = fmt.Sprintf("failed to save new version: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if err := h.db.Commit(t); err != nil {
+		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
@@ -207,10 +222,16 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		log.Printf("slack not configured, skipping sending message for new version of schema for resource %s", request.Resource)
 	}
 	response.Success = true
+	var schemaMap map[string]any
+	if err := json.Unmarshal(newSchemaBytes, &schemaMap); err != nil {
+		response.Error = fmt.Sprintf("failed to unmarshal new schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 	response.Resource = ResourceResp{
 		ID:      r.ID,
 		Name:    r.Name,
-		Schema:  r.Schema,
+		Schema:  schemaMap,
 		Version: r.Version,
 	}
 	c.JSON(http.StatusOK, response)
@@ -328,7 +349,11 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 			Version: 1,
 		}
 		t := h.db.OpenTxn()
-		h.db.Save(res, t)
+		if err := h.db.Save(res, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
 
 		// Save the new version.
 		rv := &wrappers.ResourceVersions{
@@ -338,10 +363,14 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 			NewSchema:           res.Schema,
 			Version:             res.Version,
 		}
-		h.db.Save(rv, t)
-		res := h.db.Commit(t)
-		if res.Error != nil {
-			response.Error = fmt.Sprintf("failed to commit transaction: %v", res.Error)
+		if err := h.db.Save(rv, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource version: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+
+		if err := h.db.Commit(t); err != nil {
+			response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
@@ -359,7 +388,11 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 	res.Schema = string(schemaBytes)
 	res.Version += 1
 	t := h.db.OpenTxn()
-	h.db.Save(res, t)
+	if err := h.db.Save(res, t); err != nil {
+		response.Error = fmt.Sprintf("failed to save resource: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
@@ -369,18 +402,28 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 		NewSchema:           res.Schema,
 		Version:             res.Version,
 	}
-	h.db.Save(rv, t)
-	result := h.db.Commit(t)
-	if result.Error != nil {
-		response.Error = fmt.Sprintf("failed to commit transaction: %v", result.Error)
+	if err := h.db.Save(rv, t); err != nil {
+		response.Error = fmt.Sprintf("failed to save resource version: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	if err := h.db.Commit(t); err != nil {
+		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 	response.Success = true
+	var schema map[string]any
+	if err := json.Unmarshal(schemaBytes, &schema); err != nil {
+		response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
 	response.Resource = ResourceResp{
 		ID:      res.ID,
 		Name:    res.Name,
-		Schema:  res.Schema,
+		Schema:  schema,
 		Version: res.Version,
 	}
 	c.JSON(http.StatusOK, response)
@@ -396,9 +439,15 @@ func (h *HavenHandler) getResources(c *gin.Context) {
 		return
 	}
 	for _, r := range resources {
+		var schema map[string]any
+		if err := json.Unmarshal([]byte(r.Schema), &schema); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
 		response.Resources = append(response.Resources, ResourceResp{
 			Name:    r.Name,
-			Schema:  r.Schema,
+			Schema:  schema,
 			Version: r.Version,
 		})
 	}
@@ -421,13 +470,32 @@ func (h *HavenHandler) getResourceVersions(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
+	if len(versions) == 0 {
+		response.Error = fmt.Sprintf("no versions found for resource id %d", id)
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
 	for _, v := range versions {
+		var oldSchema map[string]any
+		if v.OldSchema == "" {
+			oldSchema = make(map[string]any)
+		} else if err := json.Unmarshal([]byte(v.OldSchema), &oldSchema); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal old schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+		var newSchema map[string]any
+		if err := json.Unmarshal([]byte(v.NewSchema), &newSchema); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal new schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
 		response.Versions = append(response.Versions, ResourceVersionsResponse{
 			Version:             v.Version,
 			ResourceID:          v.ResourceID,
 			ReferencePayloadsID: v.ReferencePayloadsID,
-			OldSchema:           v.OldSchema,
-			NewSchema:           v.NewSchema,
+			OldSchema:           oldSchema,
+			NewSchema:           newSchema,
 		})
 	}
 	c.JSON(http.StatusOK, response)
@@ -447,6 +515,11 @@ func (h *HavenHandler) getReferencePayload(c *gin.Context) {
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to get reference payload from db: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if payload == nil {
+		response.Error = fmt.Sprintf("no reference payload found for id %d", id)
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 	response.Payload = payload

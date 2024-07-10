@@ -10,33 +10,37 @@ type Sender interface {
 }
 
 type SlackSender struct {
-	Token     string
 	ChannelID string
+	cli       SlackCli
+}
+
+type SlackCli interface {
+	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
 }
 
 func NewSlackSender(token, channelID string) *SlackSender {
+	// Create a new Slack client
+	api := slack.New(token)
 	return &SlackSender{
-		Token:     token,
 		ChannelID: channelID,
+		cli:       api,
 	}
 }
 
 func (s *SlackSender) IsActive() bool {
-	return s.Token != "" && s.ChannelID != ""
+	return s.cli != nil && s.ChannelID != ""
 }
 
 // SendMessageToSlack sends a message to a Slack channel.
+// Ignore this function for coverage since it mostly uses external dependencies.
 func (s *SlackSender) SendMessage(message string) error {
-	// Create a new Slack client
-	api := slack.New(s.Token)
-
 	// Set the message options
 	options := []slack.MsgOption{
 		slack.MsgOptionText(message, false),
 	}
 
 	// Send the message
-	_, _, err := api.PostMessage(s.ChannelID, options...)
+	_, _, err := s.cli.PostMessage(s.ChannelID, options...)
 	if err != nil {
 		return err
 	}
