@@ -59,4 +59,9 @@ jobs:
       run: go build -v ./...
 
     - name: Test
+      env: 
+        DB_HOST: postgres
+        DB_USER: root
+        DB_PASS: postgres
+        DB_NAME: haventest
       run: go test -v ./...
