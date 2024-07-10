@@ -35,6 +35,12 @@ jobs:
           - 5432:5432
     steps:
     - uses: actions/checkout@v4
+    - name: Query database
+      run: psql -h postgres -d postgres -U postgres -c 'CREATE DATABASE haventest;'
+      env:
+        # postgress password is required; alternatively, you can run:
+        # `PGPASSWORD=postgres_password psql ...`
+        PGPASSWORD: postgres
 
     - name: Set up Go
       uses: actions/setup-go@v5
