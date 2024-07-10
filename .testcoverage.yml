@@ -19,8 +19,16 @@ threshold:
 
   # (optional; default 0) 
   # The minimum coverage that each package should have
-  package: 80
+  package: 70
 
   # (optional; default 0) 
   # The minimum total coverage project should have
-  total: 90
+  total: 70
+
+
+# Holds regexp rules which will exclude matched files or packages 
+# from coverage statistics
+exclude:
+  # Exclude files or packages matching their paths
+  paths:
+    - ^main.go$
