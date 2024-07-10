@@ -35,6 +35,10 @@ jobs:
           - 5432:5432
     steps:
     - uses: actions/checkout@v4
+    - name: Install PostgreSQL client
+      run: |
+        apt-get update
+        apt-get install --yes postgresql-client
     - name: Query database
       run: psql -h postgres -d postgres -U postgres -c 'CREATE DATABASE haventest;'
       env:
