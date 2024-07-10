@@ -16,6 +16,29 @@ import (
 	"movinglake.com/haven/wrappers"
 )
 
+var (
+	DB_HOST = os.Getenv("DB_HOST")
+	DB_USER = os.Getenv("DB_USER")
+	DB_PASS = os.Getenv("DB_PASS")
+	DB_NAME = os.Getenv("DB_NAME")
+)
+
+func init() {
+	if DB_HOST == "" {
+		DB_HOST = "localhost"
+	}
+	if DB_USER == "" {
+		DB_USER = "postgres"
+	}
+	if DB_PASS == "" {
+		DB_PASS = "postgres"
+	}
+	if DB_NAME == "" {
+		DB_NAME = "haventest"
+	}
+
+}
+
 type TestData struct {
 	Requests []handler.AddPayloadRequest `json:"requests"`
 }
@@ -51,7 +74,7 @@ func TestHealth(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
 	// Create DB connection.
-	db, err := wrappers.NewDB("postgresql://localhost:5432/haventest?sslmode=disable")
+	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +100,7 @@ func TestAddPayload(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
 	// Create DB connection.
-	db, err := wrappers.NewDB("postgresql://localhost:5432/haventest?sslmode=disable")
+	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	db.TruncateAll() // Ensure the DB is empty.
 	if err != nil {
 		t.Fatal(err)
@@ -201,7 +224,7 @@ func TestCruds(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
 	// Create DB connection.
-	db, err := wrappers.NewDB("postgresql://localhost:5432/haventest?sslmode=disable")
+	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	db.TruncateAll() // Ensure the DB is empty.
 	if err != nil {
 		t.Fatal(err)
