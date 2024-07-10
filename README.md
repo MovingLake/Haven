@@ -1,6 +1,8 @@
 # Haven
 Haven is an OSS tool to run continuous data QA.
 
+![coverage](https://raw.githubusercontent.com/MovingLake/Haven/badges/.badges/main/coverage.svg)
+
 ## Requirements
 
 Haven uses a postgres DB to store resources, schemas and their versions. You can load the postgres address through the `.env` file or through command line flags (see the `.env` file for specifics).

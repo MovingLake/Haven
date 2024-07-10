@@ -11,6 +11,13 @@ profile: cover.out
 # When specified reported file paths will not contain local prefix in the output
 local-prefix: "github.com/movinglake/Haven"
 
+## when token is not specified (value '') this feature is turned off
+## in this example badge is created and committed only for main branch
+git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+## name of branch where badges are stored
+## ideally this should be orphan branch (see below how to create this branch)
+git-branch: badges 
+
 # Holds coverage thresholds percentages, values should be in range [0-100]
 threshold:
   # (optional; default 0) 
@@ -24,7 +31,6 @@ threshold:
   # (optional; default 0) 
   # The minimum total coverage project should have
   total: 70
-
 
 # Holds regexp rules which will exclude matched files or packages 
 # from coverage statistics
