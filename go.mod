@@ -3,6 +3,7 @@ module movinglake.com/haven
 go 1.22.0
 
 require (
+	github.com/go-playground/assert/v2 v2.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/slack-go/slack v0.13.0

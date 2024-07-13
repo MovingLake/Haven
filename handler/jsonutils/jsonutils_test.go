@@ -289,7 +289,7 @@ func TestExpandSchema(t *testing.T) {
 		payload any
 		errors  []gojsonschema.ResultError
 		want    map[string]any
-		wantErr error
+		wantErr bool
 	}{
 		{
 			name: "No validation errors",
@@ -305,32 +305,51 @@ func TestExpandSchema(t *testing.T) {
 			},
 		},
 		{
-			name: "Key not in schema",
-			schema: map[string]any{
-				"type":       "object",
-				"properties": map[string]any{},
-				"required":   []any{},
-			},
-			payload: map[string]any{
-				"key": "value",
-			},
+			name: "Additional property fails",
 			errors: []gojsonschema.ResultError{
-				buildError("additional_property_not_allowed", gojsonschema.NewJsonContext("key", nil), nil, "", "", nil),
+				buildError("additional_property_not_allowed", gojsonschema.NewJsonContext("key", nil), nil, "", "", gojsonschema.ErrorDetails{}),
 			},
-			want: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{
-						"type": "string",
-					},
-				},
-				"required": []any{"key"},
+			wantErr: true,
+		},
+		{
+			name: "Invalid Type property fails",
+			errors: []gojsonschema.ResultError{
+				buildError("invalid_type", gojsonschema.NewJsonContext("key", nil), nil, "", "", gojsonschema.ErrorDetails{}),
 			},
+			wantErr: true,
+		},
+		{
+			name: "Required property fails",
+			errors: []gojsonschema.ResultError{
+				buildError("required", gojsonschema.NewJsonContext("key", nil), nil, "", "", gojsonschema.ErrorDetails{}),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Array Max Items Fails",
+			errors: []gojsonschema.ResultError{
+				buildError("array_no_additional_items", gojsonschema.NewJsonContext("key", nil), nil, "", "", gojsonschema.ErrorDetails{}),
+			},
+			wantErr: true,
 		},
 	}
-	// TODO: Run the test cases.
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			err := jsonutils.ExpandSchema(c.schema, c.payload, c.errors)
+			if c.wantErr && err == nil {
+				t.Fatalf("ExpandSchema(%v, %v, %v) returned nil, expected error", c.schema, c.payload, c.errors)
+			}
+			if !c.wantErr && err != nil {
+				t.Fatalf("ExpandSchema(%v, %v, %v) returned error %v", c.schema, c.payload, c.errors, err)
+			}
+			if c.wantErr {
+				return
+			}
+
+			if diff := cmp.Diff(c.want, c.schema, ignoreSlices); diff != "" {
+				t.Errorf("ExpandSchema(%v, %v, %v) returned diff %v", c.schema, c.payload, c.errors, diff)
+			}
+
 		})
 	}
 }
@@ -348,6 +367,29 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 			},
 			payload: map[string]any{},
+		},
+		{
+			name: "Empty schema changes",
+			schema: map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"name": "John Doe",
+				"age":  30,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"age": map[string]any{
+						"type": "integer",
+					},
+					"name": map[string]any{
+						"type": "string",
+					},
+				},
+				"additionalProperties": false,
+			},
 		},
 		{
 			name: "Required not in schema",
@@ -656,58 +698,6 @@ func TestApplyPayload(t *testing.T) {
 			},
 		},
 		{
-			name: "Maximum Violated",
-			schema: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{
-						"type":    "integer",
-						"maximum": 2,
-					},
-				},
-				"additionalProperties": false,
-			},
-			payload: map[string]any{
-				"key": 3,
-			},
-			want: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{
-						"type":    "integer",
-						"maximum": 3,
-					},
-				},
-				"additionalProperties": false,
-			},
-		},
-		{
-			name: "Exclusive Maximum Violated",
-			schema: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{
-						"type":             "integer",
-						"exclusiveMaximum": 2,
-					},
-				},
-				"additionalProperties": false,
-			},
-			payload: map[string]any{
-				"key": 3,
-			},
-			want: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{
-						"type":             "integer",
-						"exclusiveMaximum": 3,
-					},
-				},
-				"additionalProperties": false,
-			},
-		},
-		{
 			name: "Key Added",
 			schema: map[string]any{
 				"type":                 "object",
@@ -727,6 +717,154 @@ func TestApplyPayload(t *testing.T) {
 				},
 				"additionalProperties": false,
 				"required":             []any{},
+			},
+		},
+		{
+			name: "Number Gt Violated",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":    "number",
+						"minimum": 5,
+					},
+					"b": map[string]any{
+						"type":    "number",
+						"minimum": 4.5,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 4,
+				"b": 4.4,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":    "number",
+						"minimum": 4,
+					},
+					"b": map[string]any{
+						"type":    "number",
+						"minimum": 4.4,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Number Gte Violated",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":             "number",
+						"exclusiveMinimum": 5,
+					},
+					"b": map[string]any{
+						"type":             "number",
+						"exclusiveMinimum": 4.899,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 5,
+				"b": 4.899,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":             "number",
+						"exclusiveMinimum": 4,
+					},
+					"b": map[string]any{
+						"type":             "number",
+						"exclusiveMinimum": 4.8989,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Number Lt Violated",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":    "number",
+						"maximum": 5,
+					},
+					"b": map[string]any{
+						"type":    "number",
+						"maximum": 4.5,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 6,
+				"b": 4.6,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":    "number",
+						"maximum": 6,
+					},
+					"b": map[string]any{
+						"type":    "number",
+						"maximum": 4.6,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Number Lte Violated",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":             "integer",
+						"exclusiveMaximum": 5,
+					},
+					"b": map[string]any{
+						"type":             "number",
+						"exclusiveMaximum": 4.899,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 5,
+				"b": 4.899,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type":             "integer",
+						"exclusiveMaximum": 6,
+					},
+					"b": map[string]any{
+						"type":             "number",
+						"exclusiveMaximum": 4.8991,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
 			},
 		},
 	}
