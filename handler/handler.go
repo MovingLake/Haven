@@ -123,9 +123,10 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	}
 
 	// Get the schema of the resource.
-	t := h.db.OpenTxn()
 	r := &wrappers.Resource{}
+	t := h.db.OpenTxn()
 	if err := h.db.Find(r, t, "name = ?", request.Resource); err != nil {
+		h.db.Rollback(t)
 		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
 		c.JSON(http.StatusBadRequest, response)
 		return
@@ -134,6 +135,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	schema := make(map[string]interface{})
 	if r.ID != 0 {
 		if err := json.Unmarshal([]byte(r.Schema), &schema); err != nil {
+			h.db.Rollback(t)
 			response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
 			c.JSON(http.StatusInternalServerError, response)
 			return
@@ -142,15 +144,23 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 
 	newSchema, err := jsonutils.ApplyPayload(schema, request.Payload, request.Resource)
 	if err != nil {
+		h.db.Rollback(t)
 		response.Error = fmt.Sprintf("failed to apply payload: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
 	if newSchema == nil {
+		h.db.Commit(t) // Only here to close the transaction.
 		// No changes to existing schema.
 		log.Printf("no changes to the schema for resource %v", request.Resource)
 		response.Success = true
+		response.Resource = ResourceResp{
+			ID:      r.ID,
+			Name:    r.Name,
+			Schema:  schema,
+			Version: r.Version,
+		}
 		c.JSON(http.StatusOK, response)
 		return
 	}
@@ -159,6 +169,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	// Save the new schema.
 	newSchemaBytes, err := json.Marshal(newSchema)
 	if err != nil {
+		h.db.Rollback(t)
 		response.Error = fmt.Sprintf("failed to marshal new schema: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
@@ -167,15 +178,12 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	oldSchema := r.Schema
 	r.Schema = string(newSchemaBytes)
 	r.Name = request.Resource
-	if err := h.db.Save(r, t); err != nil {
-		response.Error = fmt.Sprintf("failed to save new schema: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+	h.db.Save(r, t) // Error check when commiting.
 
 	// Save the reference payload.
 	payloadBytes, err := json.Marshal(request.Payload)
 	if err != nil {
+		h.db.Rollback(t)
 		response.Error = fmt.Sprintf("failed to marshal payload: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
@@ -184,11 +192,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		ResourceID: r.ID,
 		Payload:    string(payloadBytes),
 	}
-	if err := h.db.Save(refPayload, t); err != nil {
-		response.Error = fmt.Sprintf("failed to save reference payload: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+	h.db.Save(refPayload, t) // Error check when commiting.
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
@@ -199,11 +203,7 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 		Version:             r.Version,
 	}
 
-	if err := h.db.Save(rv, t); err != nil {
-		response.Error = fmt.Sprintf("failed to save new version: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+	h.db.Save(rv, t) // Error check when commiting.
 	if err := h.db.Commit(t); err != nil {
 		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
@@ -258,7 +258,7 @@ func (h *HavenHandler) validatePayload(c *gin.Context) {
 	var response ValidatePayloadResponse
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
 		response.Error = err.Error()
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 	// Get the schema of the resource.
@@ -316,6 +316,11 @@ func (h *HavenHandler) getSchema(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
+	if res == nil {
+		response.Error = fmt.Sprintf("resource not found: %s", c.Params.ByName("name"))
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
 	response.Schema = make(map[string]any)
 	if err := json.Unmarshal([]byte(res.Schema), &response.Schema); err != nil {
 		response.Error = fmt.Sprintf("failed to unmarshal DB schema: %v", err)
@@ -325,88 +330,69 @@ func (h *HavenHandler) getSchema(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// setSchema sets the schema of the resource.
-func (h *HavenHandler) setSchema(c *gin.Context) {
-	var request SetSchemaRequest
-	var response SetSchemaResponse
-	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
-		response.Error = fmt.Sprintf("failed to parse json request: %v", err)
-		c.JSON(http.StatusBadRequest, response)
-		return
-	}
-	res, err := h.db.GetResource(request.Resource)
+func (h *HavenHandler) setSchemaNewResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse) {
+	m, err := json.Marshal(request.Schema)
 	if err != nil {
-		m, err := json.Marshal(request.Schema)
-		if err != nil {
-			response.Error = fmt.Sprintf("failed to marshal schema: %v", err)
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-		// Create a new resource.
-		res = &wrappers.Resource{
-			Name:    request.Resource,
-			Schema:  string(m),
-			Version: 1,
-		}
-		t := h.db.OpenTxn()
-		if err := h.db.Save(res, t); err != nil {
-			response.Error = fmt.Sprintf("failed to save resource: %v", err)
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-
-		// Save the new version.
-		rv := &wrappers.ResourceVersions{
-			ResourceID:          res.ID,
-			ReferencePayloadsID: 0,
-			OldSchema:           "",
-			NewSchema:           res.Schema,
-			Version:             res.Version,
-		}
-		if err := h.db.Save(rv, t); err != nil {
-			response.Error = fmt.Sprintf("failed to save resource version: %v", err)
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-
-		if err := h.db.Commit(t); err != nil {
-			response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
-			c.JSON(http.StatusInternalServerError, response)
-			return
-		}
-		response.Success = true
-		c.JSON(http.StatusOK, response)
+		response.Error = fmt.Sprintf("failed to marshal schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
+	// Create a new resource.
+	res := &wrappers.Resource{
+		Name:    request.Resource,
+		Schema:  string(m),
+		Version: 1,
+	}
+	t := h.db.OpenTxn()
+	h.db.Save(res, t) // Error check when commiting.
+
+	// Save the new version.
+	rv := &wrappers.ResourceVersions{
+		ResourceID:          res.ID,
+		ReferencePayloadsID: 0,
+		OldSchema:           "",
+		NewSchema:           res.Schema,
+		Version:             res.Version,
+	}
+	h.db.Save(rv, t) // Error check when commiting.
+
+	if err := h.db.Commit(t); err != nil {
+		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	response.Resource = ResourceResp{
+		ID:      res.ID,
+		Name:    res.Name,
+		Schema:  request.Schema,
+		Version: res.Version,
+	}
+	response.Success = true
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse, existingResource *wrappers.Resource) {
 	schemaBytes, err := json.Marshal(request.Schema)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to marshal schema: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
-	oldSchema := res.Schema
-	res.Schema = string(schemaBytes)
-	res.Version += 1
+	oldSchema := existingResource.Schema
+	existingResource.Schema = string(schemaBytes)
+	existingResource.Version += 1
 	t := h.db.OpenTxn()
-	if err := h.db.Save(res, t); err != nil {
-		response.Error = fmt.Sprintf("failed to save resource: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+	h.db.Save(existingResource, t) // Error check when commiting.
 
 	// Save the new version.
 	rv := &wrappers.ResourceVersions{
-		ResourceID:          res.ID,
+		ResourceID:          existingResource.ID,
 		ReferencePayloadsID: 0,
 		OldSchema:           oldSchema,
-		NewSchema:           res.Schema,
-		Version:             res.Version,
+		NewSchema:           existingResource.Schema,
+		Version:             existingResource.Version,
 	}
-	if err := h.db.Save(rv, t); err != nil {
-		response.Error = fmt.Sprintf("failed to save resource version: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+	h.db.Save(rv, t) // Error check when commiting.
 
 	if err := h.db.Commit(t); err != nil {
 		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
@@ -421,12 +407,35 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 		return
 	}
 	response.Resource = ResourceResp{
-		ID:      res.ID,
-		Name:    res.Name,
+		ID:      existingResource.ID,
+		Name:    existingResource.Name,
 		Schema:  schema,
-		Version: res.Version,
+		Version: existingResource.Version,
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+// setSchema sets the schema of the resource.
+func (h *HavenHandler) setSchema(c *gin.Context) {
+	var request SetSchemaRequest
+	var response SetSchemaResponse
+	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
+		response.Error = fmt.Sprintf("failed to parse json request: %v", err)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	dbRes, err := h.db.GetResource(request.Resource)
+	if err != nil {
+		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if dbRes == nil {
+		// Create a new resource with the request's schema.
+		h.setSchemaNewResource(c, request, &response)
+		return
+	}
+	h.setSchemaExistingResource(c, request, &response, dbRes)
 }
 
 // getResources returns all the resources.

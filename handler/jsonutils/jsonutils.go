@@ -2,6 +2,7 @@ package jsonutils
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 
@@ -244,6 +245,7 @@ func ExpandSchema(schema map[string]any, payload any, errors []gojsonschema.Resu
 // Note that if no new schema is generated, the newSchema is nil.
 func ApplyPayload(oldSchema map[string]any, payload any, resourceName string) (map[string]any, error) {
 	if len(oldSchema) == 0 {
+		log.Printf("[jsonutils] ApplyPayload got an empty old schema")
 		return CreateSchema(payload, resourceName), nil
 	}
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewGoLoader(oldSchema))

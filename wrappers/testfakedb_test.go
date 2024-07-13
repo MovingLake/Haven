@@ -71,9 +71,9 @@ func TestGetResource(t *testing.T) {
 	if r.Name != "guesty.com/api/v2/listings" {
 		t.Fatalf("expected guesty.com/api/v2/listings, got %s", r.Name)
 	}
-	_, err = db.GetResource("guesty.com/api/v2/non-existent")
-	if err == nil {
-		t.Fatalf("expected error, got nil")
+	r, err = db.GetResource("guesty.com/api/v2/non-existent")
+	if r != nil || err != nil {
+		t.Errorf("expected nil, got %v %v", r, err)
 	}
 }
 

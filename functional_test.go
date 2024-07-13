@@ -8,10 +8,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/assert/v2"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"movinglake.com/haven/handler"
 	"movinglake.com/haven/wrappers"
 )
@@ -70,9 +73,142 @@ func loadTestData(t *testing.T, file string) TestData {
 	return testJson
 }
 
+func loadLoadTestData(t *testing.T) []map[string]any {
+	t.Helper()
+	// Load the test data from the file.
+	entries, err := os.ReadDir("./testdata/hostaway")
+	if err != nil {
+		t.Fatalf("Failed to read test data directory: %v", err)
+	}
+	retval := make([]map[string]any, len(entries))
+	for i, f := range entries {
+		fullPath := fmt.Sprintf("./testdata/hostaway/%s", f.Name())
+		out, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Fatalf("Failed to read test data file %s: %v", fullPath, err)
+		}
+		var data map[string]any
+		err = json.Unmarshal(out, &data)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal test data: %v", err)
+		}
+		retval[i] = data
+	}
+	return retval
+}
+
+func TestLoadTest(t *testing.T) {
+	// Create a new Gin router
+	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	// Create DB connection.
+	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
+	db.TruncateAll() // Ensure the DB is empty.
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := handler.NewHavenHandler(db, nil)
+	h.RegisterRoutes(router)
+	payloads := loadLoadTestData(t)
+	for _, p := range payloads {
+		recorder := httptest.NewRecorder()
+		var request handler.AddPayloadRequest
+		request.Payload = p
+		request.Resource = "load_test"
+		ser, err := json.Marshal(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(ser))
+		router.ServeHTTP(recorder, req)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+		}
+		var response handler.AddPayloadResponse
+		err = json.NewDecoder(recorder.Body).Decode(&response)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if response.Error != "" {
+			t.Fatalf("Expected no error but got %s", response.Error)
+		}
+	}
+	// Get resulting schema.
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/load_test", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+	}
+	var response handler.GetSchemaResponse
+	err = json.NewDecoder(recorder.Body).Decode(&response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.TruncateAll()
+	// Now run the real load test.
+	errors := make(chan error, len(payloads))
+	var wg sync.WaitGroup
+	for _, p := range payloads {
+		wg.Add(1)
+		go func(p map[string]any) {
+			defer wg.Done()
+			recorder := httptest.NewRecorder()
+			var request handler.AddPayloadRequest
+			request.Payload = p
+			request.Resource = "load_test"
+			ser, err := json.Marshal(request)
+			if err != nil {
+				errors <- err
+				return
+			}
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(ser))
+			router.ServeHTTP(recorder, req)
+			if recorder.Code != http.StatusOK {
+				errors <- fmt.Errorf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+				return
+			}
+			var response handler.AddPayloadResponse
+			err = json.NewDecoder(recorder.Body).Decode(&response)
+			if err != nil {
+				errors <- err
+				return
+			}
+			if response.Error != "" {
+				errors <- fmt.Errorf("Expected no error but got %s", response.Error)
+				return
+			}
+		}(p)
+	}
+	wg.Wait()
+	close(errors)
+	for e := range errors {
+		if e != nil {
+			t.Fatal(e)
+		}
+	}
+	// Get resulting schema.
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/load_test", nil)
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+	}
+	var response2 handler.GetSchemaResponse
+	err = json.NewDecoder(recorder.Body).Decode(&response2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	less := func(a, b string) bool { return a < b }
+	if diff := cmp.Diff(response, response2, cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("Response mismatch: %s", diff)
+	}
+}
+
 func TestHealth(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
+	gin.SetMode(gin.TestMode)
 	// Create DB connection.
 	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	if err != nil {
@@ -99,6 +235,7 @@ func TestHealth(t *testing.T) {
 func TestAddPayload(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
+	gin.SetMode(gin.TestMode)
 	// Create DB connection.
 	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	db.TruncateAll() // Ensure the DB is empty.
@@ -223,6 +360,7 @@ func TestAddPayload(t *testing.T) {
 func TestCruds(t *testing.T) {
 	// Create a new Gin router
 	router := gin.Default()
+	gin.SetMode(gin.TestMode)
 	// Create DB connection.
 	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
 	db.TruncateAll() // Ensure the DB is empty.
@@ -371,4 +509,63 @@ func TestCruds(t *testing.T) {
 		t.Fatalf("Expected a payload but got nil")
 	}
 
+}
+
+func TestBadRequests(t *testing.T) {
+	// Create a new Gin router
+	router := gin.Default()
+	gin.SetMode(gin.TestMode)
+	// Create DB connection.
+	db, err := wrappers.NewDB(fmt.Sprintf("postgresql://%s:%s@%s:5432/%s?sslmode=disable", DB_USER, DB_PASS, DB_HOST, DB_NAME))
+	db.TruncateAll() // Ensure the DB is empty.
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := handler.NewHavenHandler(db, nil)
+	h.RegisterRoutes(router)
+	db.Save(&wrappers.Resource{
+		Name:    "test",
+		Schema:  "{\"type\": \"object\"}",
+		Version: 1,
+	}, nil)
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/test", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/3klj45@##", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_schema/3klj45/@##", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_resource_versions/23", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/get_resource_versions/notfound", nil)
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 }

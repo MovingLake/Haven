@@ -48,6 +48,7 @@ type DB interface {
 	Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error
 	Save(value interface{}, optTx *gorm.DB) error
 	Commit(optTx *gorm.DB) error
+	Rollback(optTx *gorm.DB) error
 }
 
 type DBImpl struct {
@@ -91,8 +92,8 @@ func (d *DBImpl) OpenTxn() *gorm.DB {
 func (d *DBImpl) GetResource(resource string) (*Resource, error) {
 	r := &Resource{}
 	ret := d.conn.Find(r, "name = ?", resource)
-	if r.ID == 0 {
-		return nil, fmt.Errorf("resource not found for %s", resource)
+	if ret.RowsAffected == 0 {
+		return nil, nil
 	}
 	return r, ret.Error
 }
@@ -150,5 +151,13 @@ func (d *DBImpl) Commit(optTx *gorm.DB) error {
 		return res.Error
 	}
 	res := optTx.Commit()
+	return res.Error
+}
+
+func (d *DBImpl) Rollback(optTx *gorm.DB) error {
+	if optTx == nil {
+		return nil
+	}
+	res := optTx.Rollback()
 	return res.Error
 }

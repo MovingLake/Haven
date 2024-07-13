@@ -372,12 +372,14 @@ func numberGt(e gojsonschema.ResultError, schema map[string]any, payload any) er
 	if !ok {
 		return fmt.Errorf("property is not a string")
 	}
-	var p any
-	p, ok = payload.(map[string]any)[propName].(float64)
+	p, ok := payload.(map[string]any)[propName].(float64)
 	if !ok {
-		p = payload.(map[string]any)[propName].(int)
+		pi := payload.(map[string]any)[propName].(int) - 1
+		schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMinimum"] = pi
+		return nil
 	}
-	schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMinimum"] = p
+	// The number is a float. Not sure how to handle this.
+	schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMinimum"] = p - 0.0001
 	return nil
 }
 
@@ -390,12 +392,12 @@ func numberLt(e gojsonschema.ResultError, schema map[string]any, payload any) er
 	if !ok {
 		return fmt.Errorf("property is not a string")
 	}
-	var p any
-	p, ok = payload.(map[string]any)[propName].(float64)
+	p, ok := payload.(map[string]any)[propName].(float64)
 	if !ok {
-		p = payload.(map[string]any)[propName].(int)
+		pi := payload.(map[string]any)[propName].(int) + 1
+		schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMaximum"] = pi
 	}
-	schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMaximum"] = p
+	schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMaximum"] = p + 0.0001
 	return nil
 }
 
