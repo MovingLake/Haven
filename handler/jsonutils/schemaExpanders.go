@@ -3,7 +3,9 @@ package jsonutils
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/andres-movl/gojsonschema"
 )
@@ -112,6 +114,51 @@ func arrayName(ctx *gojsonschema.JsonContext) string {
 	return ctx.Tail().Head()
 }
 
+func intToNum(i string) string {
+	if i == "integer" {
+		return "number"
+	}
+	return i
+}
+
+func at(field string, schema map[string]any) any {
+	parts := strings.Split(field, ".")
+	var ptr any
+	ptr = schema
+	if len(parts) == 1 {
+		return schema["properties"].(map[string]any)[field]
+	}
+	for _, p := range parts {
+		ptr = ptr.(map[string]any)["properties"].(map[string]any)[p]
+	}
+	return ptr
+}
+
+func set(field string, schema map[string]any, value any) {
+	parts := strings.Split(field, ".")
+	var ptr any
+	ptr = schema
+	if len(parts) == 1 {
+		schema["properties"].(map[string]any)[field] = value
+	}
+	for i, p := range parts {
+		if i == len(parts)-1 {
+			ptr.(map[string]any)["properties"].(map[string]any)[p] = value
+			return
+		}
+		_, err := strconv.Atoi(p)
+		_, ok := ptr.(map[string]any)["items"]
+		if err == nil && ok {
+			ptr = ptr.(map[string]any)["items"]
+			if _, ok = ptr.(map[string]any)["anyOf"]; ok {
+				ptr = ptr.(map[string]any)["anyOf"].([]any)[0]
+			}
+			continue
+		}
+		ptr = ptr.(map[string]any)["properties"].(map[string]any)[p]
+	}
+}
+
 func invalidType(e gojsonschema.ResultError, schema map[string]any, payload any) error {
 	if isArray(e.Context()) {
 		// Invalid type can be because an item in the array is of a different type.
@@ -119,11 +166,11 @@ func invalidType(e gojsonschema.ResultError, schema map[string]any, payload any)
 		propName := arrayName(e.Context())
 		prevType := schema["properties"].(map[string]any)[propName].(map[string]any)["items"]
 		if prevType == nil {
-			prevType = e.Details()["expected"].(string)
+			prevType = intToNum(e.Details()["expected"].(string))
 		} else if reflect.TypeOf(prevType).Kind() == reflect.String {
 			prevType = prevType.(string)
 		}
-		typ := e.Details()["given"].(string)
+		typ := intToNum(e.Details()["given"].(string))
 		schema["properties"].(map[string]any)[propName].(map[string]any)["items"] = map[string]any{
 			"anyOf": []map[string]any{
 				{
@@ -144,13 +191,16 @@ func invalidType(e gojsonschema.ResultError, schema map[string]any, payload any)
 	if !ok {
 		return fmt.Errorf("property is not a string")
 	}
-	typ := e.Details()["given"].(string)
+	typ := intToNum(e.Details()["given"].(string))
 	// This is a change of type. Make the type an array if not already and add the type.
 	prevType := e.Details()["expected"]
 	if reflect.TypeOf(prevType).Kind() == reflect.String {
 		prevType = []any{prevType}
 	}
 	prevType = append(prevType.([]any), typ)
+	sort.Slice(prevType.([]any), func(i, j int) bool {
+		return prevType.([]any)[i].(string) < prevType.([]any)[j].(string)
+	})
 	if typ == "object" {
 		schema["properties"].(map[string]any)[propName] = ObjectSchema(payload.(map[string]any)[propName].(map[string]any))
 		schema["properties"].(map[string]any)[propName].(map[string]any)["type"] = prevType
@@ -161,9 +211,7 @@ func invalidType(e gojsonschema.ResultError, schema map[string]any, payload any)
 		schema["properties"].(map[string]any)[propName].(map[string]any)["type"] = prevType
 		return nil
 	}
-	schema["properties"].(map[string]any)[propName] = map[string]any{
-		"type": prevType,
-	}
+	set(propName, schema, map[string]any{"type": prevType})
 	return nil
 
 }
@@ -396,6 +444,7 @@ func numberLt(e gojsonschema.ResultError, schema map[string]any, payload any) er
 	if !ok {
 		pi := payload.(map[string]any)[propName].(int) + 1
 		schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMaximum"] = pi
+		return nil
 	}
 	schema["properties"].(map[string]any)[propName].(map[string]any)["exclusiveMaximum"] = p + 0.0001
 	return nil

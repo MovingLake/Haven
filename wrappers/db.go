@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	_ "github.com/lib/pq"
 )
@@ -15,7 +16,7 @@ import (
 // Schema: {json-schema}
 type Resource struct {
 	gorm.Model
-	Name    string
+	Name    string `gorm:"index:idx_name,unique"`
 	Schema  string
 	Version uint
 }
@@ -24,21 +25,24 @@ type Resource struct {
 // the payload that triggered the new version.
 type ResourceVersions struct {
 	gorm.Model
-	Version             uint
-	ResourceID          uint
-	ReferencePayloadsID uint
-	OldSchema           string
-	NewSchema           string
+	Version            uint
+	ResourceID         int
+	Resource           Resource `gorm:"constraint:OnDelete:CASCADE;"`
+	ReferencePayloadID *int
+	ReferencePayload   *ReferencePayloads `gorm:"constraint:OnDelete:SET NULL;"`
+	OldSchema          string
+	NewSchema          string
 }
 
 type ReferencePayloads struct {
 	gorm.Model
-	ResourceID uint
+	ResourceID int
+	Resource   Resource `gorm:"constraint:OnDelete:CASCADE;"`
 	Payload    string
 }
 
 type DB interface {
-	GetResource(resource string) (*Resource, error)
+	GetResource(resource string, optTx *gorm.DB) (*Resource, error)
 	GetAllResources() ([]Resource, error)
 	GetResourceVersions(resourceID uint) ([]ResourceVersions, error)
 	GetReferencePayload(id uint) (*ReferencePayloads, error)
@@ -49,6 +53,8 @@ type DB interface {
 	Save(value interface{}, optTx *gorm.DB) error
 	Commit(optTx *gorm.DB) error
 	Rollback(optTx *gorm.DB) error
+	SelectResourceForUpdate(resourceName string, optTx *gorm.DB) (*Resource, error)
+	Transaction(f func(tx *gorm.DB) error) error
 }
 
 type DBImpl struct {
@@ -56,6 +62,7 @@ type DBImpl struct {
 }
 
 func NewDB(connStr string) (DB, error) {
+	fmt.Printf("Running with DB at %s\n", connStr)
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -89,8 +96,15 @@ func (d *DBImpl) OpenTxn() *gorm.DB {
 	return d.conn.Begin()
 }
 
-func (d *DBImpl) GetResource(resource string) (*Resource, error) {
+func (d *DBImpl) GetResource(resource string, optTx *gorm.DB) (*Resource, error) {
 	r := &Resource{}
+	if optTx != nil {
+		ret := optTx.Find(r, "name = ?", resource)
+		if ret.RowsAffected == 0 {
+			return nil, nil
+		}
+		return r, ret.Error
+	}
 	ret := d.conn.Find(r, "name = ?", resource)
 	if ret.RowsAffected == 0 {
 		return nil, nil
@@ -160,4 +174,19 @@ func (d *DBImpl) Rollback(optTx *gorm.DB) error {
 	}
 	res := optTx.Rollback()
 	return res.Error
+}
+
+func (d *DBImpl) SelectResourceForUpdate(resourceName string, optTx *gorm.DB) (*Resource, error) {
+	r := &Resource{}
+	t := optTx.Clauses(clause.Locking{
+		Strength: "UPDATE",
+	}).Find(r, "name = ?", resourceName)
+	if t.Error != nil {
+		return nil, t.Error
+	}
+	return r, nil
+}
+
+func (d *DBImpl) Transaction(f func(tx *gorm.DB) error) error {
+	return d.conn.Transaction(f)
 }

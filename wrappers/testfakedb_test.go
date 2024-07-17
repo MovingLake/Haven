@@ -57,21 +57,21 @@ func TestGetResource(t *testing.T) {
 	for _, r := range resources {
 		db.Save(&r, nil)
 	}
-	r, err := db.GetResource("guesty.com/api/v2/reservations")
+	r, err := db.GetResource("guesty.com/api/v2/reservations", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r.Name != "guesty.com/api/v2/reservations" {
 		t.Fatalf("expected guesty.com/api/v2/reservations, got %s", r.Name)
 	}
-	r, err = db.GetResource("guesty.com/api/v2/listings")
+	r, err = db.GetResource("guesty.com/api/v2/listings", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r.Name != "guesty.com/api/v2/listings" {
 		t.Fatalf("expected guesty.com/api/v2/listings, got %s", r.Name)
 	}
-	r, err = db.GetResource("guesty.com/api/v2/non-existent")
+	r, err = db.GetResource("guesty.com/api/v2/non-existent", nil)
 	if r != nil || err != nil {
 		t.Errorf("expected nil, got %v %v", r, err)
 	}
@@ -113,22 +113,24 @@ func TestResources(t *testing.T) {
 
 func TestResourceVersions(t *testing.T) {
 	db := wrappers.NewTestDB()
+	one := 1
+	two := 2
 	resourceVersions := []wrappers.ResourceVersions{
 		{
-			Model:               gorm.Model{ID: 1},
-			Version:             1,
-			ResourceID:          1,
-			ReferencePayloadsID: 1,
-			OldSchema:           "{json-schema}",
-			NewSchema:           "{json-schema}",
+			Model:              gorm.Model{ID: 1},
+			Version:            1,
+			ResourceID:         1,
+			ReferencePayloadID: &one,
+			OldSchema:          "{json-schema}",
+			NewSchema:          "{json-schema}",
 		},
 		{
-			Model:               gorm.Model{ID: 2},
-			Version:             1,
-			ResourceID:          2,
-			ReferencePayloadsID: 2,
-			OldSchema:           "{json-schema}",
-			NewSchema:           "{json-schema}",
+			Model:              gorm.Model{ID: 2},
+			Version:            1,
+			ResourceID:         2,
+			ReferencePayloadID: &two,
+			OldSchema:          "{json-schema}",
+			NewSchema:          "{json-schema}",
 		},
 	}
 	for _, rv := range resourceVersions {
@@ -211,22 +213,24 @@ func TestFind(t *testing.T) {
 		t.Fatalf("expected {json-payload}, got %s", rp.Payload)
 	}
 
+	one := 1
+	two := 2
 	resourceVersions := []wrappers.ResourceVersions{
 		{
-			Model:               gorm.Model{ID: 1},
-			Version:             1,
-			ResourceID:          1,
-			ReferencePayloadsID: 1,
-			OldSchema:           "{json-schema}",
-			NewSchema:           "{json-schema}",
+			Model:              gorm.Model{ID: 1},
+			Version:            1,
+			ResourceID:         1,
+			ReferencePayloadID: &one,
+			OldSchema:          "{json-schema}",
+			NewSchema:          "{json-schema}",
 		},
 		{
-			Model:               gorm.Model{ID: 2},
-			Version:             1,
-			ResourceID:          2,
-			ReferencePayloadsID: 2,
-			OldSchema:           "{json-schema}",
-			NewSchema:           "{json-schema}",
+			Model:              gorm.Model{ID: 2},
+			Version:            1,
+			ResourceID:         2,
+			ReferencePayloadID: &two,
+			OldSchema:          "{json-schema}",
+			NewSchema:          "{json-schema}",
 		},
 	}
 	for _, rv := range resourceVersions {

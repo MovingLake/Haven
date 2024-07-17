@@ -122,10 +122,10 @@ func TypeOf(v any) string {
 		return "boolean"
 	case string:
 		return "string"
+	case int:
+		return "number"
 	case float64:
 		return "number"
-	case int:
-		return "integer"
 	case []any:
 		return "array"
 	case map[string]any:

@@ -9,6 +9,7 @@ import (
 
 	"github.com/andres-movl/gojsonschema"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"movinglake.com/haven/handler/jsonutils"
 	"movinglake.com/haven/handler/notifications"
 	"movinglake.com/haven/wrappers"
@@ -93,12 +94,12 @@ type GetAllResourcesResponse struct {
 }
 
 type ResourceVersionsResponse struct {
-	ID                  uint           `json:"id"`
-	Version             uint           `json:"version"`
-	ResourceID          uint           `json:"resource_id"`
-	ReferencePayloadsID uint           `json:"reference_payloads_id"`
-	OldSchema           map[string]any `json:"old_schema"`
-	NewSchema           map[string]any `json:"new_schema"`
+	ID               uint           `json:"id"`
+	Version          uint           `json:"version"`
+	Resource         uint           `json:"resource_id"`
+	ReferencePayload uint           `json:"reference_payload_id"`
+	OldSchema        map[string]any `json:"old_schema"`
+	NewSchema        map[string]any `json:"new_schema"`
 }
 
 type GetResourceVersionsResponse struct {
@@ -123,118 +124,124 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 	}
 
 	// Get the schema of the resource.
-	r := &wrappers.Resource{}
-	t := h.db.OpenTxn()
-	if err := h.db.Find(r, t, "name = ?", request.Resource); err != nil {
-		h.db.Rollback(t)
-		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
-		c.JSON(http.StatusBadRequest, response)
-		return
-	}
-
-	schema := make(map[string]interface{})
-	if r.ID != 0 {
-		if err := json.Unmarshal([]byte(r.Schema), &schema); err != nil {
-			h.db.Rollback(t)
-			response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
-			c.JSON(http.StatusInternalServerError, response)
-			return
+	h.db.Transaction(func(t *gorm.DB) error {
+		r, err := h.db.SelectResourceForUpdate(request.Resource, t)
+		if err != nil {
+			response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
+			c.JSON(http.StatusBadRequest, response)
+			return err
 		}
-	}
 
-	newSchema, err := jsonutils.ApplyPayload(schema, request.Payload, request.Resource)
-	if err != nil {
-		h.db.Rollback(t)
-		response.Error = fmt.Sprintf("failed to apply payload: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
+		schema := make(map[string]interface{})
+		if r != nil && r.ID != 0 {
+			if err := json.Unmarshal([]byte(r.Schema), &schema); err != nil {
+				response.Error = fmt.Sprintf("failed to unmarshal schema: %v \"%v\"", err, r.Schema)
+				c.JSON(http.StatusInternalServerError, response)
+				return err
+			}
+		}
 
-	if newSchema == nil {
-		h.db.Commit(t) // Only here to close the transaction.
-		// No changes to existing schema.
-		log.Printf("no changes to the schema for resource %v", request.Resource)
+		newSchema, err := jsonutils.ApplyPayload(schema, request.Payload, request.Resource)
+		if err != nil {
+			response.Error = fmt.Sprintf("failed to apply payload: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		if r == nil {
+			r = &wrappers.Resource{}
+		}
+
+		if newSchema == nil {
+			// No changes to existing schema.
+			log.Printf("no changes to the schema for resource %v", request.Resource)
+			response.Success = true
+			response.Resource = ResourceResp{
+				ID:      r.ID,
+				Name:    r.Name,
+				Schema:  schema,
+				Version: r.Version,
+			}
+			c.JSON(http.StatusOK, response)
+			return nil
+		}
+		log.Printf("changes found to the schema for resource %s", request.Resource)
+
+		// Save the new schema.
+		newSchemaBytes, err := json.Marshal(newSchema)
+		if err != nil {
+			response.Error = fmt.Sprintf("failed to marshal new schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		r.Version += 1
+		oldSchema := r.Schema
+		r.Schema = string(newSchemaBytes)
+		r.Name = request.Resource
+		if err := h.db.Save(r, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+
+		// Save the reference payload.
+		payloadBytes, err := json.Marshal(request.Payload)
+		if err != nil {
+			response.Error = fmt.Sprintf("failed to marshal payload: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		refPayload := &wrappers.ReferencePayloads{
+			Resource: *r,
+			Payload:  string(payloadBytes),
+		}
+		if err := h.db.Save(refPayload, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save reference payload: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+
+		// Save the new version.
+		rv := &wrappers.ResourceVersions{
+			Resource:         *r,
+			ReferencePayload: refPayload,
+			OldSchema:        oldSchema,
+			NewSchema:        string(newSchemaBytes),
+			Version:          r.Version,
+		}
+
+		if err := h.db.Save(rv, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource version: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		if h.slacker != nil && h.slacker.IsActive() {
+			log.Printf("sending slack message for new version of schema for resource %s", request.Resource)
+			err := h.slacker.SendMessage(
+				fmt.Sprintf("New version `%d` of schema for resource `%s` has been added",
+					r.Version,
+					request.Resource))
+			if err != nil {
+				log.Printf("failed to send slack message: %v", err)
+			}
+		} else {
+			log.Printf("slack not configured, skipping sending message for new version of schema for resource %s", request.Resource)
+		}
 		response.Success = true
+		var schemaMap map[string]any
+		if err := json.Unmarshal(newSchemaBytes, &schemaMap); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal new schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
 		response.Resource = ResourceResp{
 			ID:      r.ID,
 			Name:    r.Name,
-			Schema:  schema,
+			Schema:  schemaMap,
 			Version: r.Version,
 		}
 		c.JSON(http.StatusOK, response)
-		return
-	}
-	log.Printf("changes found to the schema for resource %s", request.Resource)
-
-	// Save the new schema.
-	newSchemaBytes, err := json.Marshal(newSchema)
-	if err != nil {
-		h.db.Rollback(t)
-		response.Error = fmt.Sprintf("failed to marshal new schema: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	r.Version += 1
-	oldSchema := r.Schema
-	r.Schema = string(newSchemaBytes)
-	r.Name = request.Resource
-	h.db.Save(r, t) // Error check when commiting.
-
-	// Save the reference payload.
-	payloadBytes, err := json.Marshal(request.Payload)
-	if err != nil {
-		h.db.Rollback(t)
-		response.Error = fmt.Sprintf("failed to marshal payload: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	refPayload := &wrappers.ReferencePayloads{
-		ResourceID: r.ID,
-		Payload:    string(payloadBytes),
-	}
-	h.db.Save(refPayload, t) // Error check when commiting.
-
-	// Save the new version.
-	rv := &wrappers.ResourceVersions{
-		ResourceID:          r.ID,
-		ReferencePayloadsID: refPayload.ID,
-		OldSchema:           oldSchema,
-		NewSchema:           string(newSchemaBytes),
-		Version:             r.Version,
-	}
-
-	h.db.Save(rv, t) // Error check when commiting.
-	if err := h.db.Commit(t); err != nil {
-		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	if h.slacker != nil && h.slacker.IsActive() {
-		log.Printf("sending slack message for new version of schema for resource %s", request.Resource)
-		err := h.slacker.SendMessage(
-			fmt.Sprintf("New version `%d` of schema for resource `%s` has been added",
-				r.Version,
-				request.Resource))
-		if err != nil {
-			log.Printf("failed to send slack message: %v", err)
-		}
-	} else {
-		log.Printf("slack not configured, skipping sending message for new version of schema for resource %s", request.Resource)
-	}
-	response.Success = true
-	var schemaMap map[string]any
-	if err := json.Unmarshal(newSchemaBytes, &schemaMap); err != nil {
-		response.Error = fmt.Sprintf("failed to unmarshal new schema: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	response.Resource = ResourceResp{
-		ID:      r.ID,
-		Name:    r.Name,
-		Schema:  schemaMap,
-		Version: r.Version,
-	}
-	c.JSON(http.StatusOK, response)
+		return nil
+	})
 }
 
 type ErrorResponse struct {
@@ -262,7 +269,7 @@ func (h *HavenHandler) validatePayload(c *gin.Context) {
 		return
 	}
 	// Get the schema of the resource.
-	res, err := h.db.GetResource(request.Resource)
+	res, err := h.db.GetResource(request.Resource, nil)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
 		c.JSON(http.StatusBadRequest, response)
@@ -310,7 +317,7 @@ func (h *HavenHandler) validatePayload(c *gin.Context) {
 // getSchema returns the schema of the resource.
 func (h *HavenHandler) getSchema(c *gin.Context) {
 	var response GetSchemaResponse
-	res, err := h.db.GetResource(c.Params.ByName("name"))
+	res, err := h.db.GetResource(c.Params.ByName("name"), nil)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
@@ -343,32 +350,36 @@ func (h *HavenHandler) setSchemaNewResource(c *gin.Context, request SetSchemaReq
 		Schema:  string(m),
 		Version: 1,
 	}
-	t := h.db.OpenTxn()
-	h.db.Save(res, t) // Error check when commiting.
+	h.db.Transaction(func(t *gorm.DB) error {
+		if err := h.db.Save(res, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
 
-	// Save the new version.
-	rv := &wrappers.ResourceVersions{
-		ResourceID:          res.ID,
-		ReferencePayloadsID: 0,
-		OldSchema:           "",
-		NewSchema:           res.Schema,
-		Version:             res.Version,
-	}
-	h.db.Save(rv, t) // Error check when commiting.
+		// Save the new version.
+		rv := &wrappers.ResourceVersions{
+			Resource:  *res,
+			OldSchema: "",
+			NewSchema: res.Schema,
+			Version:   res.Version,
+		}
+		if err := h.db.Save(rv, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource version: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
 
-	if err := h.db.Commit(t); err != nil {
-		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	response.Resource = ResourceResp{
-		ID:      res.ID,
-		Name:    res.Name,
-		Schema:  request.Schema,
-		Version: res.Version,
-	}
-	response.Success = true
-	c.JSON(http.StatusOK, response)
+		response.Resource = ResourceResp{
+			ID:      res.ID,
+			Name:    res.Name,
+			Schema:  request.Schema,
+			Version: res.Version,
+		}
+		response.Success = true
+		c.JSON(http.StatusOK, response)
+		return nil
+	})
 }
 
 func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse, existingResource *wrappers.Resource) {
@@ -381,38 +392,41 @@ func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSche
 	oldSchema := existingResource.Schema
 	existingResource.Schema = string(schemaBytes)
 	existingResource.Version += 1
-	t := h.db.OpenTxn()
-	h.db.Save(existingResource, t) // Error check when commiting.
+	h.db.Transaction(func(t *gorm.DB) error {
+		if err := h.db.Save(existingResource, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
 
-	// Save the new version.
-	rv := &wrappers.ResourceVersions{
-		ResourceID:          existingResource.ID,
-		ReferencePayloadsID: 0,
-		OldSchema:           oldSchema,
-		NewSchema:           existingResource.Schema,
-		Version:             existingResource.Version,
-	}
-	h.db.Save(rv, t) // Error check when commiting.
-
-	if err := h.db.Commit(t); err != nil {
-		response.Error = fmt.Sprintf("failed to commit transaction: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	response.Success = true
-	var schema map[string]any
-	if err := json.Unmarshal(schemaBytes, &schema); err != nil {
-		response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
-		c.JSON(http.StatusInternalServerError, response)
-		return
-	}
-	response.Resource = ResourceResp{
-		ID:      existingResource.ID,
-		Name:    existingResource.Name,
-		Schema:  schema,
-		Version: existingResource.Version,
-	}
-	c.JSON(http.StatusOK, response)
+		// Save the new version.
+		rv := &wrappers.ResourceVersions{
+			Resource:  *existingResource,
+			OldSchema: oldSchema,
+			NewSchema: existingResource.Schema,
+			Version:   existingResource.Version,
+		}
+		if err := h.db.Save(rv, t); err != nil {
+			response.Error = fmt.Sprintf("failed to save resource version: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		response.Success = true
+		var schema map[string]any
+		if err := json.Unmarshal(schemaBytes, &schema); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return err
+		}
+		response.Resource = ResourceResp{
+			ID:      existingResource.ID,
+			Name:    existingResource.Name,
+			Schema:  schema,
+			Version: existingResource.Version,
+		}
+		c.JSON(http.StatusOK, response)
+		return nil
+	})
 }
 
 // setSchema sets the schema of the resource.
@@ -424,7 +438,7 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	dbRes, err := h.db.GetResource(request.Resource)
+	dbRes, err := h.db.GetResource(request.Resource, nil)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
 		c.JSON(http.StatusInternalServerError, response)
@@ -499,13 +513,16 @@ func (h *HavenHandler) getResourceVersions(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
-		response.Versions = append(response.Versions, ResourceVersionsResponse{
-			Version:             v.Version,
-			ResourceID:          v.ResourceID,
-			ReferencePayloadsID: v.ReferencePayloadsID,
-			OldSchema:           oldSchema,
-			NewSchema:           newSchema,
-		})
+		r := ResourceVersionsResponse{
+			Version:   v.Version,
+			Resource:  v.Resource.ID,
+			OldSchema: oldSchema,
+			NewSchema: newSchema,
+		}
+		if v.ReferencePayload != nil {
+			r.ReferencePayload = v.ReferencePayload.ID
+		}
+		response.Versions = append(response.Versions, r)
 	}
 	c.JSON(http.StatusOK, response)
 }
