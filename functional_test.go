@@ -112,6 +112,10 @@ func TestLoadTest(t *testing.T) {
 	h := handler.NewHavenHandler(db, nil)
 	h.RegisterRoutes(router)
 	payloads := loadLoadTestData(t)
+	if payloads == nil {
+		// No loadtest data.
+		return
+	}
 	for _, p := range payloads {
 		var request handler.AddPayloadRequest
 		request.Payload = p
