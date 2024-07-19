@@ -2,6 +2,7 @@ package jsonutils_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/andres-movl/gojsonschema"
@@ -10,7 +11,14 @@ import (
 	"movinglake.com/haven/handler/jsonutils"
 )
 
-var ignoreSlices = cmpopts.IgnoreSliceElements(func(string) bool { return true })
+var sortSlices = cmpopts.SortSlices(func(a, b any) bool {
+	astr, ok := a.(string)
+	bstr, okb := b.(string)
+	if !ok || !okb {
+		return false
+	}
+	return astr < bstr
+})
 
 func buildError(t string, c *gojsonschema.JsonContext, v any, d, df string, dets gojsonschema.ErrorDetails) gojsonschema.ResultError {
 	f := &gojsonschema.ResultErrorFields{}
@@ -50,9 +58,6 @@ func TestArraySchema(t *testing.T) {
 							"type": "boolean",
 						},
 						map[string]any{
-							"type": "integer",
-						},
-						map[string]any{
 							"type": "null",
 						},
 						map[string]any{
@@ -76,7 +81,7 @@ func TestArraySchema(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got := jsonutils.ArraySchema(c.payload)
-			if diff := cmp.Diff(c.want, got, ignoreSlices); diff != "" {
+			if diff := cmp.Diff(c.want, got, sortSlices); diff != "" {
 				t.Errorf("ArraySchema(%v) returned diff %v", c.payload, diff)
 			}
 		})
@@ -109,7 +114,7 @@ func TestObjectSchema(t *testing.T) {
 						"type": "string",
 					},
 					"key2": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 					"key3": map[string]any{
 						"type": "number",
@@ -152,7 +157,7 @@ func TestObjectSchema(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got := jsonutils.ObjectSchema(c.payload)
-			if diff := cmp.Diff(c.want, got, ignoreSlices); diff != "" {
+			if diff := cmp.Diff(c.want, got, sortSlices); diff != "" {
 				t.Errorf("ObjectSchema(%v) returned diff %v", c.payload, diff)
 			}
 		})
@@ -189,7 +194,7 @@ func TestCreateSchema(t *testing.T) {
 						"type": "string",
 					},
 					"key2": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 					"key3": map[string]any{
 						"type": "number",
@@ -223,7 +228,7 @@ func TestCreateSchema(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got := jsonutils.CreateSchema(c.payload, c.name)
-			if diff := cmp.Diff(c.want, got, ignoreSlices); diff != "" {
+			if diff := cmp.Diff(c.want, got, sortSlices); diff != "" {
 				t.Errorf("CreateSchema(%v) returned diff %v", c.payload, diff)
 			}
 		})
@@ -232,51 +237,57 @@ func TestCreateSchema(t *testing.T) {
 
 func TestTypeOf(t *testing.T) {
 	cases := []struct {
-		payload interface{}
+		payload string
 		name    string
 		want    string
 	}{
 		{
-			payload: nil,
+			payload: "null",
 			name:    "nil",
 			want:    "null",
 		},
 		{
-			payload: true,
+			payload: "true",
 			name:    "boolean",
 			want:    "boolean",
 		},
 		{
-			payload: 1,
-			name:    "integer",
-			want:    "integer",
-		},
-		{
-			payload: 1.0,
+			payload: "1",
 			name:    "number",
 			want:    "number",
 		},
 		{
-			payload: "string",
+			payload: "1.0",
+			name:    "number",
+			want:    "number",
+		},
+		{
+			payload: "\"string\"",
 			name:    "string",
 			want:    "string",
 		},
 		{
-			payload: map[string]any{},
+			payload: "{}",
 			name:    "object",
 			want:    "object",
 		},
 		{
-			payload: []any{},
+			payload: "[]",
 			name:    "array",
 			want:    "array",
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := jsonutils.TypeOf(c.payload)
+			str := fmt.Sprintf("{\"a\": %s}", c.payload)
+			jstr := map[string]any{}
+			err := json.Unmarshal([]byte(str), &jstr)
+			if err != nil {
+				t.Fatalf("json.Unmarshal(%s) returned error %v", str, err)
+			}
+			got := jsonutils.TypeOf(jstr["a"])
 			if diff := cmp.Diff(c.want, got); diff != "" {
-				t.Errorf("TypeOf(%v) returned diff %v", c.payload, diff)
+				t.Errorf("TypeOf(%v) returned diff %v", jstr["a"], diff)
 			}
 		})
 	}
@@ -346,7 +357,7 @@ func TestExpandSchema(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(c.want, c.schema, ignoreSlices); diff != "" {
+			if diff := cmp.Diff(c.want, c.schema, sortSlices); diff != "" {
 				t.Errorf("ExpandSchema(%v, %v, %v) returned diff %v", c.schema, c.payload, c.errors, diff)
 			}
 
@@ -382,7 +393,7 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"age": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 					"name": map[string]any{
 						"type": "string",
@@ -400,7 +411,7 @@ func TestApplyPayload(t *testing.T) {
 						"type": "string",
 					},
 					"key2": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 				},
 				"required":             []any{"key"},
@@ -416,7 +427,7 @@ func TestApplyPayload(t *testing.T) {
 						"type": "string",
 					},
 					"key2": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 				},
 				"required":             []any{},
@@ -480,7 +491,7 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"key": map[string]any{
-						"type": []any{"string", "integer"},
+						"type": []any{"number", "string"},
 					},
 				},
 				"additionalProperties": false,
@@ -587,7 +598,7 @@ func TestApplyPayload(t *testing.T) {
 						"items": map[string]any{
 							"anyOf": []map[string]any{
 								{"type": "string"},
-								{"type": "integer"},
+								{"type": "number"},
 							},
 						},
 					},
@@ -678,7 +689,7 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"key": map[string]any{
-						"type":       "integer",
+						"type":       "number",
 						"multipleOf": 2,
 					},
 				},
@@ -691,7 +702,7 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"key": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 				},
 				"additionalProperties": false,
@@ -836,7 +847,7 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"a": map[string]any{
-						"type":             "integer",
+						"type":             "number",
 						"exclusiveMaximum": 5,
 					},
 					"b": map[string]any{
@@ -855,12 +866,152 @@ func TestApplyPayload(t *testing.T) {
 				"type": "object",
 				"properties": map[string]any{
 					"a": map[string]any{
-						"type":             "integer",
+						"type":             "number",
 						"exclusiveMaximum": 6,
 					},
 					"b": map[string]any{
 						"type":             "number",
 						"exclusiveMaximum": 4.8991,
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Type changes string to null",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "string",
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": nil,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": []any{"null", "string"},
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Type changes null to string",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "null",
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": "b",
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": []any{"null", "string"},
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Type changes null to number",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "null",
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 1233,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": []any{"null", "number"},
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Nested type changes number to null",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"b": map[string]any{
+								"type": "number",
+							},
+						},
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": map[string]any{"b": nil},
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"b": map[string]any{
+								"type": []any{"null", "number"},
+							},
+						},
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+		},
+		{
+			name: "Type changes null to number",
+			schema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": "null",
+					},
+				},
+				"required":             []any{},
+				"additionalProperties": false,
+			},
+			payload: map[string]any{
+				"a": 1233,
+			},
+			want: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"a": map[string]any{
+						"type": []any{"null", "number"},
 					},
 				},
 				"required":             []any{},
@@ -874,7 +1025,7 @@ func TestApplyPayload(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ApplyPayload(%v, %v) returned error %v", c.schema, c.payload, err)
 			}
-			if diff := cmp.Diff(c.want, got, ignoreSlices); diff != "" {
+			if diff := cmp.Diff(c.want, got, sortSlices); diff != "" {
 				t.Errorf("ApplyPayload(%v, %v) returned diff %v", c.schema, c.payload, diff)
 			}
 		})
@@ -887,7 +1038,20 @@ func TestValidatePayload(t *testing.T) {
 		schema  map[string]any
 		payload any
 		want    []gojsonschema.ResultError
+		wantErr bool
 	}{
+		{
+			name: "Malformed Schema",
+			schema: map[string]any{
+				"a": "b",
+			},
+			wantErr: true,
+		},
+		{
+			name:    "Empty schema",
+			schema:  map[string]any{},
+			wantErr: true,
+		},
 		{
 			name: "No changes",
 			schema: map[string]any{
@@ -904,7 +1068,7 @@ func TestValidatePayload(t *testing.T) {
 						"type": "string",
 					},
 					"key2": map[string]any{
-						"type": "integer",
+						"type": "number",
 					},
 				},
 				"required":             []any{"key"},
@@ -948,13 +1112,13 @@ func TestValidatePayload(t *testing.T) {
 					"invalid_type",
 					gojsonschema.NewJsonContext("key", gojsonschema.NewJsonContext("(root)", nil)),
 					map[string]any{"key2": json.Number("1")},
-					"Invalid type. Expected: string, given: integer",
+					"Invalid type. Expected: string, given: number",
 					"Invalid type. Expected: {{.expected}}, given: {{.given}}",
 					gojsonschema.ErrorDetails{
 						"context":  string("(root).key"),
 						"expected": string("string"),
 						"field":    string("key"),
-						"given":    string("integer"),
+						"given":    string("number"),
 					},
 				),
 			},
@@ -964,10 +1128,13 @@ func TestValidatePayload(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			got, err := jsonutils.ValidatePayload(c.schema, c.payload)
 			if err != nil {
+				if c.wantErr {
+					return
+				}
 				t.Fatalf("ValidatePayload(%v, %v) returned error %v", c.schema, c.payload, err)
 			}
 			for i, e := range c.want {
-				if diff := cmp.Diff(e.Type(), got.Errors()[i].Type(), ignoreSlices); diff != "" {
+				if diff := cmp.Diff(e.Type(), got.Errors()[i].Type(), sortSlices); diff != "" {
 					t.Errorf("ValidatePayload(%v, %v) returned diff %v", c.schema, c.payload, diff)
 				}
 			}

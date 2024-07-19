@@ -11,33 +11,111 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+	"movinglake.com/haven/handler/notifications"
 	"movinglake.com/haven/wrappers"
 )
+
+type fakeSlackSender struct {
+	err error
+}
+
+func (f *fakeSlackSender) SendMessage(message string) error {
+	return f.err
+}
+
+func (f *fakeSlackSender) IsActive() bool {
+	return true
+}
 
 func TestAddPayload(t *testing.T) {
 	// Create a fake DB
 	db := wrappers.NewTestDB().(*wrappers.TestDB)
-
-	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
-
-	// Create a test router
-	router := gin.Default()
-	gin.SetMode(gin.TestMode)
-	router.POST("/add-payload", handler.addPayload)
 
 	cases := []struct {
 		name       string
 		dbErrors   map[string]error
 		dbResource *wrappers.Resource
 		request    *AddPayloadRequest
+		rawRequest string
+		slacker    notifications.Sender
 		want       *AddPayloadResponse
 		wantCode   int
 	}{
 		{
+			name: "Slack gets sent",
+			request: &AddPayloadRequest{
+				Resource: "users",
+				Payload:  map[string]interface{}{"name": "John Doe", "age": 30},
+			},
+			slacker:  &fakeSlackSender{},
+			wantCode: http.StatusOK,
+			want: &AddPayloadResponse{
+				Success: true,
+				Resource: ResourceResp{
+					ID:   1,
+					Name: "users",
+					Schema: map[string]any{
+						"$id":                  "https://movinglake.com/haven.schema.json",
+						"$schema":              "https://json-schema.org/draft/2020-12/schema",
+						"additionalProperties": false,
+						"properties": map[string]any{
+							"age":  map[string]any{"type": "number"},
+							"name": map[string]any{"type": "string"},
+						},
+						"required": []any{"age", "name"},
+						"title":    "users",
+						"type":     "object",
+					},
+					Version: 1,
+				},
+			},
+		},
+		{
+			name:     "DB Save Fails",
+			dbErrors: map[string]error{"Save": gorm.ErrInvalidData},
+			request: &AddPayloadRequest{
+				Resource: "users",
+				Payload:  map[string]interface{}{"name": "John Doe", "age": 30},
+			},
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:       "Payload is not parsable, no resource",
+			rawRequest: "{\"resource\": \"users\", \"payload\": {\"name: \"John Doe\", \"age\": 30}",
+			wantCode:   http.StatusBadRequest,
+		},
+		{
+			name: "Payload is not parsable, resource exists",
+			dbResource: &wrappers.Resource{
+				Name:    "users",
+				Schema:  "{\"type\": \"object\", \"additionalProperties\": false}",
+				Version: 1,
+			},
+			rawRequest: "{\"resource\": \"users\", \"payload\": {\"name: \"John Doe\", \"age\": 30}",
+			wantCode:   http.StatusBadRequest,
+		},
+		{
+			name:       "Request malformed",
+			rawRequest: "Some { miss formated \"\"]} payload",
+			wantCode:   http.StatusBadRequest,
+		},
+		{
+			name: "DB contains bad schema",
+			dbResource: &wrappers.Resource{
+				Name:    "users",
+				Schema:  "some non <json> schema",
+				Version: 1,
+			},
+			request: &AddPayloadRequest{
+				Resource: "users",
+				Payload:  map[string]interface{}{"name": "John Doe", "age": 30},
+			},
+			wantCode: http.StatusInternalServerError,
+		},
+		{
 			name: "DB failed to find",
 			dbErrors: map[string]error{
-				"Find": gorm.ErrRecordNotFound,
+				"SelectResourceForUpdate": gorm.ErrRecordNotFound,
 			},
 			wantCode: http.StatusBadRequest,
 		},
@@ -127,6 +205,15 @@ func TestAddPayload(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Create a new HavenHandler with the fake DB
+			handler := NewHavenHandler(db, nil)
+			handler.slacker = tc.slacker
+
+			// Create a test router
+			router := gin.Default()
+			gin.SetMode(gin.TestMode)
+			handler.RegisterRoutes(router)
+			db.Errors = nil
 			if err := db.TruncateAll(); err != nil {
 				t.Fatalf("Failed to truncate db %v", err)
 			}
@@ -136,7 +223,10 @@ func TestAddPayload(t *testing.T) {
 			db.Errors = tc.dbErrors
 
 			out, _ := json.Marshal(tc.request)
-			request := httptest.NewRequest(http.MethodPost, "/add-payload", bytes.NewBuffer(out))
+			if tc.rawRequest != "" {
+				out = []byte(tc.rawRequest)
+			}
+			request := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(out))
 
 			// Perform the request
 			response := httptest.NewRecorder()

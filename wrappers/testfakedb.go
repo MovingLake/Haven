@@ -1,6 +1,8 @@
 package wrappers
 
 import (
+	"context"
+	"database/sql"
 	"reflect"
 	"time"
 
@@ -29,11 +31,39 @@ func NewTestDB() DB {
 	}
 }
 
-func (d *TestDB) OpenTxn() *gorm.DB {
+type MockTxCommmiter struct{}
+
+func (m *MockTxCommmiter) Commit() error {
 	return nil
 }
 
-func (d *TestDB) GetResource(resource string) (*Resource, error) {
+func (m *MockTxCommmiter) Rollback() error {
+	return nil
+}
+func (m *MockTxCommmiter) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	return nil, nil
+}
+func (m *MockTxCommmiter) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return nil, nil
+}
+func (m *MockTxCommmiter) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return nil, nil
+}
+func (m *MockTxCommmiter) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return nil
+}
+
+func (d *TestDB) OpenTxn() *gorm.DB {
+	t := &gorm.DB{
+		Config: &gorm.Config{},
+	}
+	t.DisableNestedTransaction = true
+	t.Statement = &gorm.Statement{}
+	t.Statement.ConnPool = &MockTxCommmiter{}
+	return t
+}
+
+func (d *TestDB) GetResource(resource string, optTx *gorm.DB) (*Resource, error) {
 	if e, ok := d.Errors["GetResource"]; ok && e != nil {
 		return nil, e
 	}
@@ -83,7 +113,7 @@ func (d *TestDB) GetResourceVersions(resourceID uint) ([]ResourceVersions, error
 	}
 	var versions []ResourceVersions
 	for _, v := range d.ResourceVersions {
-		if v.ResourceID != resourceID {
+		if v.ResourceID != int(resourceID) {
 			continue
 		}
 		versions = append(versions, v)
@@ -100,37 +130,6 @@ func (d *TestDB) GetReferencePayload(id uint) (*ReferencePayloads, error) {
 		return nil, nil
 	}
 	return &rp, nil
-}
-
-func (d *TestDB) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error {
-	if e, ok := d.Errors["Find"]; ok && e != nil {
-		return e
-	}
-	switch dest := dest.(type) {
-	case *Resource:
-		r, ok := d.Resource[conds[1].(string)]
-		if !ok {
-			return nil
-		}
-		*dest = r
-	case *[]Resource:
-		for _, r := range d.Resource {
-			*dest = append(*dest, r)
-		}
-	case *[]ResourceVersions:
-		for _, v := range d.ResourceVersions {
-			*dest = append(*dest, v)
-		}
-	case *ReferencePayloads:
-		rp, ok := d.ReferencePayloads[conds[0].(uint)]
-		if !ok {
-			return nil
-		}
-		*dest = rp
-	default:
-		return nil
-	}
-	return nil
 }
 
 func (d *TestDB) Save(value interface{}, optTx *gorm.DB) error {
@@ -185,16 +184,23 @@ func (d *TestDB) Save(value interface{}, optTx *gorm.DB) error {
 	return nil
 }
 
-func (d *TestDB) Commit(optTx *gorm.DB) error {
-	if e, ok := d.Errors["Commit"]; ok && e != nil {
-		return e
+func (d *TestDB) SelectResourceForUpdate(resourceName string, optTx *gorm.DB) (*Resource, error) {
+	if e, ok := d.Errors["SelectResourceForUpdate"]; ok && e != nil {
+		return nil, e
 	}
-	return nil
+	r, ok := d.Resource[resourceName]
+	if !ok {
+		return &Resource{
+			Model: gorm.Model{
+				ID: 0,
+			},
+			Name:    resourceName,
+			Schema:  "",
+			Version: 0,
+		}, nil
+	}
+	return &r, nil
 }
-
-func (d *TestDB) Rollback(optTx *gorm.DB) error {
-	if e, ok := d.Errors["Rollback"]; ok && e != nil {
-		return e
-	}
-	return nil
+func (d *TestDB) Transaction(f func(tx *gorm.DB) error) error {
+	return f(d.OpenTxn())
 }

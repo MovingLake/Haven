@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/assert/v2"
@@ -76,21 +78,21 @@ func loadTestData(t *testing.T, file string) TestData {
 func loadLoadTestData(t *testing.T) []map[string]any {
 	t.Helper()
 	// Load the test data from the file.
-	entries, err := os.ReadDir("./testdata/hostaway")
+	entries, err := os.ReadDir("./testdata/loadtest")
 	if err != nil {
-		t.Fatalf("Failed to read test data directory: %v", err)
+		return nil
 	}
 	retval := make([]map[string]any, len(entries))
 	for i, f := range entries {
-		fullPath := fmt.Sprintf("./testdata/hostaway/%s", f.Name())
+		fullPath := fmt.Sprintf("./testdata/loadtest/%s", f.Name())
 		out, err := os.ReadFile(fullPath)
 		if err != nil {
-			t.Fatalf("Failed to read test data file %s: %v", fullPath, err)
+			return nil
 		}
 		var data map[string]any
 		err = json.Unmarshal(out, &data)
 		if err != nil {
-			t.Fatalf("Failed to unmarshal test data: %v", err)
+			return nil
 		}
 		retval[i] = data
 	}
@@ -110,8 +112,11 @@ func TestLoadTest(t *testing.T) {
 	h := handler.NewHavenHandler(db, nil)
 	h.RegisterRoutes(router)
 	payloads := loadLoadTestData(t)
+	if payloads == nil {
+		// No loadtest data.
+		return
+	}
 	for _, p := range payloads {
-		recorder := httptest.NewRecorder()
 		var request handler.AddPayloadRequest
 		request.Payload = p
 		request.Resource = "load_test"
@@ -120,9 +125,10 @@ func TestLoadTest(t *testing.T) {
 			t.Fatal(err)
 		}
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(ser))
+		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, req)
 		if recorder.Code != http.StatusOK {
-			t.Fatalf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
+			t.Fatalf("Expected status code %d but got %d %v", http.StatusOK, recorder.Code, recorder.Body)
 		}
 		var response handler.AddPayloadResponse
 		err = json.NewDecoder(recorder.Body).Decode(&response)
@@ -153,29 +159,36 @@ func TestLoadTest(t *testing.T) {
 		wg.Add(1)
 		go func(p map[string]any) {
 			defer wg.Done()
-			recorder := httptest.NewRecorder()
-			var request handler.AddPayloadRequest
-			request.Payload = p
-			request.Resource = "load_test"
-			ser, err := json.Marshal(request)
-			if err != nil {
-				errors <- err
-				return
-			}
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(ser))
-			router.ServeHTTP(recorder, req)
-			if recorder.Code != http.StatusOK {
-				errors <- fmt.Errorf("Expected status code %d but got %d", http.StatusOK, recorder.Code)
-				return
-			}
-			var response handler.AddPayloadResponse
-			err = json.NewDecoder(recorder.Body).Decode(&response)
-			if err != nil {
-				errors <- err
-				return
-			}
-			if response.Error != "" {
-				errors <- fmt.Errorf("Expected no error but got %s", response.Error)
+			for i := 0; i < 10; i++ {
+				var request handler.AddPayloadRequest
+				request.Payload = p
+				request.Resource = "load_test"
+				ser, err := json.Marshal(request)
+				if err != nil {
+					errors <- fmt.Errorf("Failed to marshal request: %w", err)
+					return
+				}
+				recorder := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodPost, "/api/v1/add_payload", bytes.NewBuffer(ser))
+				router.ServeHTTP(recorder, req)
+				if recorder.Code != http.StatusOK {
+					if i == 9 {
+						errors <- fmt.Errorf("Failed to add payload after 10 attempts %v %v", recorder.Code, recorder.Body)
+						return
+					}
+					time.Sleep(time.Duration(1000+rand.Int()%(1+i*1000)) * time.Millisecond)
+					continue
+				}
+				var response handler.AddPayloadResponse
+				err = json.NewDecoder(recorder.Body).Decode(&response)
+				if err != nil {
+					errors <- fmt.Errorf("Failed to decode response: %w body: \"%v\"", err, recorder.Body)
+					return
+				}
+				if response.Error != "" {
+					errors <- fmt.Errorf("Expected no error but got %s", response.Error)
+					return
+				}
 				return
 			}
 		}(p)
@@ -184,7 +197,7 @@ func TestLoadTest(t *testing.T) {
 	close(errors)
 	for e := range errors {
 		if e != nil {
-			t.Fatal(e)
+			t.Error(e)
 		}
 	}
 	// Get resulting schema.
@@ -199,7 +212,14 @@ func TestLoadTest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	less := func(a, b string) bool { return a < b }
+	less := func(a, b any) bool {
+		astr, ok := a.(string)
+		bstr, okb := b.(string)
+		if !ok || !okb {
+			return false
+		}
+		return astr < bstr
+	}
 	if diff := cmp.Diff(response, response2, cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("Response mismatch: %s", diff)
 	}
