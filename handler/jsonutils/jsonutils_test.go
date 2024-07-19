@@ -1038,7 +1038,20 @@ func TestValidatePayload(t *testing.T) {
 		schema  map[string]any
 		payload any
 		want    []gojsonschema.ResultError
+		wantErr bool
 	}{
+		{
+			name: "Malformed Schema",
+			schema: map[string]any{
+				"a": "b",
+			},
+			wantErr: true,
+		},
+		{
+			name:    "Empty schema",
+			schema:  map[string]any{},
+			wantErr: true,
+		},
 		{
 			name: "No changes",
 			schema: map[string]any{
@@ -1115,6 +1128,9 @@ func TestValidatePayload(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			got, err := jsonutils.ValidatePayload(c.schema, c.payload)
 			if err != nil {
+				if c.wantErr {
+					return
+				}
 				t.Fatalf("ValidatePayload(%v, %v) returned error %v", c.schema, c.payload, err)
 			}
 			for i, e := range c.want {

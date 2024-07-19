@@ -147,9 +147,6 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, response)
 			return err
 		}
-		if r == nil {
-			r = &wrappers.Resource{}
-		}
 
 		if newSchema == nil {
 			// No changes to existing schema.

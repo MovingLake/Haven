@@ -49,10 +49,7 @@ type DB interface {
 	OpenTxn() *gorm.DB
 	TearDown() error
 	TruncateAll() error
-	Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error
 	Save(value interface{}, optTx *gorm.DB) error
-	Commit(optTx *gorm.DB) error
-	Rollback(optTx *gorm.DB) error
 	SelectResourceForUpdate(resourceName string, optTx *gorm.DB) (*Resource, error)
 	Transaction(f func(tx *gorm.DB) error) error
 }
@@ -141,38 +138,12 @@ func (d *DBImpl) GetReferencePayload(id uint) (*ReferencePayloads, error) {
 	return payload, ret.Error
 }
 
-func (d *DBImpl) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error {
-	if optTx == nil {
-		res := d.conn.Find(dest, conds...)
-		return res.Error
-	}
-	res := optTx.Find(dest, conds...)
-	return res.Error
-}
-
 func (d *DBImpl) Save(value interface{}, optTx *gorm.DB) error {
 	if optTx == nil {
 		res := d.conn.Save(value)
 		return res.Error
 	}
 	res := optTx.Save(value)
-	return res.Error
-}
-
-func (d *DBImpl) Commit(optTx *gorm.DB) error {
-	if optTx == nil {
-		res := d.conn.Commit()
-		return res.Error
-	}
-	res := optTx.Commit()
-	return res.Error
-}
-
-func (d *DBImpl) Rollback(optTx *gorm.DB) error {
-	if optTx == nil {
-		return nil
-	}
-	res := optTx.Rollback()
 	return res.Error
 }
 

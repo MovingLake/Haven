@@ -132,37 +132,6 @@ func (d *TestDB) GetReferencePayload(id uint) (*ReferencePayloads, error) {
 	return &rp, nil
 }
 
-func (d *TestDB) Find(dest interface{}, optTx *gorm.DB, conds ...interface{}) error {
-	if e, ok := d.Errors["Find"]; ok && e != nil {
-		return e
-	}
-	switch dest := dest.(type) {
-	case *Resource:
-		r, ok := d.Resource[conds[1].(string)]
-		if !ok {
-			return nil
-		}
-		*dest = r
-	case *[]Resource:
-		for _, r := range d.Resource {
-			*dest = append(*dest, r)
-		}
-	case *[]ResourceVersions:
-		for _, v := range d.ResourceVersions {
-			*dest = append(*dest, v)
-		}
-	case *ReferencePayloads:
-		rp, ok := d.ReferencePayloads[conds[0].(uint)]
-		if !ok {
-			return nil
-		}
-		*dest = rp
-	default:
-		return nil
-	}
-	return nil
-}
-
 func (d *TestDB) Save(value interface{}, optTx *gorm.DB) error {
 	if e, ok := d.Errors["Save"]; ok && e != nil {
 		return e
@@ -211,20 +180,6 @@ func (d *TestDB) Save(value interface{}, optTx *gorm.DB) error {
 		d.ReferencePayloads[value.ID] = *value
 	default:
 		return nil
-	}
-	return nil
-}
-
-func (d *TestDB) Commit(optTx *gorm.DB) error {
-	if e, ok := d.Errors["Commit"]; ok && e != nil {
-		return e
-	}
-	return nil
-}
-
-func (d *TestDB) Rollback(optTx *gorm.DB) error {
-	if e, ok := d.Errors["Rollback"]; ok && e != nil {
-		return e
 	}
 	return nil
 }
