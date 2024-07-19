@@ -41,9 +41,11 @@ func main() {
 		SlackChannelID: os.Getenv("SLACK_CHANNEL"),
 	}
 
-	handler := handler.NewHavenHandler(db, nc)
+	apiHandler := handler.NewHavenAPIHandler(db, nc)
+	htmlHandler := handler.NewHavenHTMLHandler(db)
 
 	r := gin.Default()
-	handler.RegisterRoutes(r)
+	apiHandler.RegisterRoutes(r)
+	htmlHandler.RegisterRoutes(r, "templates/*", "web_resources")
 	r.Run() // listen and serve on 0.0.0.0:8080
 }

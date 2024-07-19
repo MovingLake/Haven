@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/andres-movl/gojsonschema"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ import (
 // Has the actual logic of the API in easy to test functions.
 
 // We need to hold DB connections.
-type HavenHandler struct {
+type HavenAPIHandler struct {
 	db      wrappers.DB
 	slacker notifications.Sender
 }
@@ -29,8 +30,8 @@ type NotificationsConfig struct {
 	SlackChannelID string
 }
 
-func NewHavenHandler(db wrappers.DB, nc *NotificationsConfig) *HavenHandler {
-	handler := &HavenHandler{
+func NewHavenAPIHandler(db wrappers.DB, nc *NotificationsConfig) *HavenAPIHandler {
+	handler := &HavenAPIHandler{
 		db: db,
 	}
 	if nc != nil {
@@ -49,10 +50,12 @@ type AddPayloadRequest struct {
 }
 
 type ResourceResp struct {
-	ID      uint           `json:"id"`
-	Name    string         `json:"name"`
-	Schema  map[string]any `json:"schema"`
-	Version uint           `json:"version"`
+	ID        uint           `json:"id"`
+	Name      string         `json:"name"`
+	Schema    map[string]any `json:"schema"`
+	Version   uint           `json:"version"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 type AddPayloadResponse struct {
@@ -88,6 +91,11 @@ type SetSchemaResponse struct {
 	Success  bool         `json:"success"`
 }
 
+type GetResourceResponse struct {
+	APIResponse
+	Resource ResourceResp `json:"resource"`
+}
+
 type GetAllResourcesResponse struct {
 	APIResponse
 	Resources []ResourceResp `json:"resources"`
@@ -102,6 +110,11 @@ type ResourceVersionsResponse struct {
 	NewSchema        map[string]any `json:"new_schema"`
 }
 
+type GetResourceVersionResponse struct {
+	APIResponse
+	Version ResourceVersionsResponse `json:"version"`
+}
+
 type GetResourceVersionsResponse struct {
 	APIResponse
 	Versions []ResourceVersionsResponse `json:"versions"`
@@ -114,7 +127,7 @@ type GetReferencePayloadResponse struct {
 }
 
 // addPayload adds a new payload to the specific resource.
-func (h *HavenHandler) addPayload(c *gin.Context) {
+func (h *HavenAPIHandler) addPayload(c *gin.Context) {
 	var request AddPayloadRequest
 	var response AddPayloadResponse
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
@@ -153,10 +166,12 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 			log.Printf("no changes to the schema for resource %v", request.Resource)
 			response.Success = true
 			response.Resource = ResourceResp{
-				ID:      r.ID,
-				Name:    r.Name,
-				Schema:  schema,
-				Version: r.Version,
+				ID:        r.ID,
+				Name:      r.Name,
+				Schema:    schema,
+				Version:   r.Version,
+				CreatedAt: r.CreatedAt,
+				UpdatedAt: r.UpdatedAt,
 			}
 			c.JSON(http.StatusOK, response)
 			return nil
@@ -231,10 +246,12 @@ func (h *HavenHandler) addPayload(c *gin.Context) {
 			return err
 		}
 		response.Resource = ResourceResp{
-			ID:      r.ID,
-			Name:    r.Name,
-			Schema:  schemaMap,
-			Version: r.Version,
+			ID:        r.ID,
+			Name:      r.Name,
+			Schema:    schemaMap,
+			Version:   r.Version,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
 		}
 		c.JSON(http.StatusOK, response)
 		return nil
@@ -257,7 +274,7 @@ func toPath(ctx *gojsonschema.JsonContext) string {
 }
 
 // validatePayload validates the payload against the schema.
-func (h *HavenHandler) validatePayload(c *gin.Context) {
+func (h *HavenAPIHandler) validatePayload(c *gin.Context) {
 	var request ValidatePayloadRequest
 	var response ValidatePayloadResponse
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
@@ -312,7 +329,7 @@ func (h *HavenHandler) validatePayload(c *gin.Context) {
 }
 
 // getSchema returns the schema of the resource.
-func (h *HavenHandler) getSchema(c *gin.Context) {
+func (h *HavenAPIHandler) getSchema(c *gin.Context) {
 	var response GetSchemaResponse
 	res, err := h.db.GetResource(c.Params.ByName("name"), nil)
 	if err != nil {
@@ -334,7 +351,7 @@ func (h *HavenHandler) getSchema(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *HavenHandler) setSchemaNewResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse) {
+func (h *HavenAPIHandler) setSchemaNewResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse) {
 	m, err := json.Marshal(request.Schema)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to marshal schema: %v", err)
@@ -368,10 +385,12 @@ func (h *HavenHandler) setSchemaNewResource(c *gin.Context, request SetSchemaReq
 		}
 
 		response.Resource = ResourceResp{
-			ID:      res.ID,
-			Name:    res.Name,
-			Schema:  request.Schema,
-			Version: res.Version,
+			ID:        res.ID,
+			Name:      res.Name,
+			Schema:    request.Schema,
+			Version:   res.Version,
+			CreatedAt: res.CreatedAt,
+			UpdatedAt: res.UpdatedAt,
 		}
 		response.Success = true
 		c.JSON(http.StatusOK, response)
@@ -379,7 +398,7 @@ func (h *HavenHandler) setSchemaNewResource(c *gin.Context, request SetSchemaReq
 	})
 }
 
-func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse, existingResource *wrappers.Resource) {
+func (h *HavenAPIHandler) setSchemaExistingResource(c *gin.Context, request SetSchemaRequest, response *SetSchemaResponse, existingResource *wrappers.Resource) {
 	schemaBytes, err := json.Marshal(request.Schema)
 	if err != nil {
 		response.Error = fmt.Sprintf("failed to marshal schema: %v", err)
@@ -416,10 +435,12 @@ func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSche
 			return err
 		}
 		response.Resource = ResourceResp{
-			ID:      existingResource.ID,
-			Name:    existingResource.Name,
-			Schema:  schema,
-			Version: existingResource.Version,
+			ID:        existingResource.ID,
+			Name:      existingResource.Name,
+			Schema:    schema,
+			Version:   existingResource.Version,
+			CreatedAt: existingResource.CreatedAt,
+			UpdatedAt: existingResource.UpdatedAt,
 		}
 		c.JSON(http.StatusOK, response)
 		return nil
@@ -427,7 +448,7 @@ func (h *HavenHandler) setSchemaExistingResource(c *gin.Context, request SetSche
 }
 
 // setSchema sets the schema of the resource.
-func (h *HavenHandler) setSchema(c *gin.Context) {
+func (h *HavenAPIHandler) setSchema(c *gin.Context) {
 	var request SetSchemaRequest
 	var response SetSchemaResponse
 	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
@@ -449,8 +470,40 @@ func (h *HavenHandler) setSchema(c *gin.Context) {
 	h.setSchemaExistingResource(c, request, &response, dbRes)
 }
 
+// getResource returns the full resource.
+func (h *HavenAPIHandler) getResource(c *gin.Context) {
+	var response GetResourceResponse
+	res, err := h.db.GetResource(c.Params.ByName("name"), nil)
+	if err != nil {
+		response.Error = fmt.Sprintf("failed to get resource from db: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if res == nil {
+		response.Error = fmt.Sprintf("resource not found: %s", c.Params.ByName("name"))
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
+	schema := make(map[string]any)
+	if err := json.Unmarshal([]byte(res.Schema), &schema); err != nil {
+		response.Error = fmt.Sprintf("failed to unmarshal DB schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	response.Resource = ResourceResp{
+		ID:        res.ID,
+		Name:      res.Name,
+		Schema:    schema,
+		Version:   res.Version,
+		CreatedAt: res.CreatedAt,
+		UpdatedAt: res.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // getResources returns all the resources.
-func (h *HavenHandler) getResources(c *gin.Context) {
+func (h *HavenAPIHandler) getResources(c *gin.Context) {
 	var response GetAllResourcesResponse
 	resources, err := h.db.GetAllResources()
 	if err != nil {
@@ -466,16 +519,64 @@ func (h *HavenHandler) getResources(c *gin.Context) {
 			return
 		}
 		response.Resources = append(response.Resources, ResourceResp{
-			Name:    r.Name,
-			Schema:  schema,
-			Version: r.Version,
+			Name:      r.Name,
+			Schema:    schema,
+			Version:   r.Version,
+			ID:        r.ID,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *HavenAPIHandler) getResourceVersion(c *gin.Context) {
+	var response GetResourceVersionResponse
+	idStr := c.Params.ByName("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.Error = fmt.Sprintf("failed to parse id: %v", err)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	version, err := h.db.GetResourceVersion(uint(id), nil)
+	if err != nil {
+		response.Error = fmt.Sprintf("failed to get resource version from db: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if version.ID == 0 {
+		response.Error = fmt.Sprintf("no version found for id %d", id)
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
+	response.Version = ResourceVersionsResponse{
+		ID:        version.ID,
+		Version:   version.Version,
+		Resource:  uint(version.ResourceID),
+		OldSchema: make(map[string]any),
+		NewSchema: make(map[string]any),
+	}
+	if version.OldSchema != "" {
+		if err := json.Unmarshal([]byte(version.OldSchema), &response.Version.OldSchema); err != nil {
+			response.Error = fmt.Sprintf("failed to unmarshal old schema: %v", err)
+			c.JSON(http.StatusInternalServerError, response)
+			return
+		}
+	}
+	if err := json.Unmarshal([]byte(version.NewSchema), &response.Version.NewSchema); err != nil {
+		response.Error = fmt.Sprintf("failed to unmarshal new schema: %v", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	if version.ReferencePayload != nil {
+		response.Version.ReferencePayload = version.ReferencePayload.ID
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 // getResourceVersions returns all the versions of the resource.
-func (h *HavenHandler) getResourceVersions(c *gin.Context) {
+func (h *HavenAPIHandler) getResourceVersions(c *gin.Context) {
 	var response GetResourceVersionsResponse
 	idStr := c.Params.ByName("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -511,8 +612,9 @@ func (h *HavenHandler) getResourceVersions(c *gin.Context) {
 			return
 		}
 		r := ResourceVersionsResponse{
+			ID:        v.ID,
 			Version:   v.Version,
-			Resource:  v.Resource.ID,
+			Resource:  uint(v.ResourceID),
 			OldSchema: oldSchema,
 			NewSchema: newSchema,
 		}
@@ -525,7 +627,7 @@ func (h *HavenHandler) getResourceVersions(c *gin.Context) {
 }
 
 // getReferencePayload returns the reference payload of the version.
-func (h *HavenHandler) getReferencePayload(c *gin.Context) {
+func (h *HavenAPIHandler) getReferencePayload(c *gin.Context) {
 	var response GetReferencePayloadResponse
 	idStr := c.Params.ByName("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -549,7 +651,7 @@ func (h *HavenHandler) getReferencePayload(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *HavenHandler) RegisterRoutes(e *gin.Engine) error {
+func (h *HavenAPIHandler) RegisterRoutes(e *gin.Engine) error {
 	e.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "OK",
@@ -559,7 +661,9 @@ func (h *HavenHandler) RegisterRoutes(e *gin.Engine) error {
 	e.POST("/api/v1/validate_payload", h.validatePayload)
 	e.GET("/api/v1/get_schema/:name", h.getSchema)
 	e.POST("/api/v1/set_schema", h.setSchema)
+	e.GET("/api/v1/get_resource/:name", h.getResource)
 	e.GET("/api/v1/get_all_resources", h.getResources)
+	e.GET("/api/v1/get_resource_version/:id", h.getResourceVersion)
 	e.GET("/api/v1/get_resource_versions/:id", h.getResourceVersions)
 	e.GET("/api/v1/get_reference_payload/:id", h.getReferencePayload)
 	return nil

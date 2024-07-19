@@ -3,12 +3,14 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"movinglake.com/haven/handler/notifications"
@@ -206,7 +208,7 @@ func TestAddPayload(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a new HavenHandler with the fake DB
-			handler := NewHavenHandler(db, nil)
+			handler := NewHavenAPIHandler(db, nil)
 			handler.slacker = tc.slacker
 
 			// Create a test router
@@ -240,7 +242,8 @@ func TestAddPayload(t *testing.T) {
 			resp := &AddPayloadResponse{}
 			json.Unmarshal(response.Body.Bytes(), resp)
 			assert.Equal(t, tc.want.Success, resp.Success)
-			if dif := cmp.Diff(tc.want.Resource, resp.Resource); dif != "" {
+			ignoreTimeFields := cmpopts.IgnoreFields(ResourceResp{}, "CreatedAt", "UpdatedAt")
+			if dif := cmp.Diff(tc.want.Resource, resp.Resource, ignoreTimeFields); dif != "" {
 				t.Errorf("AddPayload(%v) got a diff: %s", tc.request, dif)
 			}
 		})
@@ -252,7 +255,7 @@ func TestValidatePayload(t *testing.T) {
 	db := wrappers.NewTestDB().(*wrappers.TestDB)
 
 	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	// Create a test router
 	router := gin.Default()
@@ -358,7 +361,7 @@ func TestGetSchema(t *testing.T) {
 	}, nil)
 
 	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	// Create a test router
 	router := gin.Default()
@@ -394,7 +397,7 @@ func TestGetSchema(t *testing.T) {
 
 func TestSetSchema(t *testing.T) {
 	db := wrappers.NewTestDB().(*wrappers.TestDB)
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 	router := gin.Default()
 	gin.SetMode(gin.TestMode)
 	handler.RegisterRoutes(router)
@@ -651,7 +654,8 @@ func TestSetSchema(t *testing.T) {
 			}
 			var resp SetSchemaResponse
 			json.Unmarshal(response.Body.Bytes(), &resp)
-			if diff := cmp.Diff(tc.want, &resp); diff != "" {
+			ignoreTimeFields := cmpopts.IgnoreFields(ResourceResp{}, "CreatedAt", "UpdatedAt")
+			if diff := cmp.Diff(tc.want, &resp, ignoreTimeFields); diff != "" {
 				t.Errorf("SetSchema(%v) got a diff: %s", tc.request, diff)
 			}
 		})
@@ -663,7 +667,7 @@ func TestGetResources(t *testing.T) {
 	db := wrappers.NewTestDB()
 
 	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	// Create a test router
 	router := gin.Default()
@@ -689,7 +693,7 @@ func TestGetResourceVersions(t *testing.T) {
 	db := wrappers.NewTestDB()
 
 	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	// Create a test router
 	router := gin.Default()
@@ -715,7 +719,7 @@ func TestGetReferencePayload(t *testing.T) {
 	db := wrappers.NewTestDB()
 
 	// Create a new HavenHandler with the fake DB
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	// Create a test router
 	router := gin.Default()
@@ -739,7 +743,7 @@ func TestGetReferencePayload(t *testing.T) {
 
 func TestBadPostRequests(t *testing.T) {
 	db := wrappers.NewTestDB()
-	handler := NewHavenHandler(db, nil)
+	handler := NewHavenAPIHandler(db, nil)
 
 	router := gin.Default()
 	gin.SetMode(gin.TestMode)
@@ -763,4 +767,187 @@ func TestBadPostRequests(t *testing.T) {
 	response = httptest.NewRecorder()
 	router.ServeHTTP(response, request)
 	assert.Equal(t, http.StatusBadRequest, response.Code)
+}
+
+func TestGetResource(t *testing.T) {
+	db := wrappers.NewTestDB().(*wrappers.TestDB)
+	handler := NewHavenAPIHandler(db, nil)
+	router := gin.Default()
+	gin.SetMode(gin.TestMode)
+	handler.RegisterRoutes(router)
+
+	cases := []struct {
+		name       string
+		dbErrors   map[string]error
+		dbResource *wrappers.Resource
+		request    string
+		want       *GetResourceResponse
+		wantCode   int
+	}{
+		{
+			name: "DB failed",
+			dbErrors: map[string]error{
+				"GetResource": gorm.ErrDuplicatedKey,
+			},
+			request:  "users",
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name: "valid request",
+			dbResource: &wrappers.Resource{
+				Model:   gorm.Model{ID: 1},
+				Name:    "users",
+				Schema:  "{\"$id\":\"https://movinglake.com/haven.schema.json\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"required\":[\"age\",\"name\"],\"title\":\"users\",\"type\":\"object\"}",
+				Version: 1,
+			},
+			request: "users",
+			want: &GetResourceResponse{
+				Resource: ResourceResp{
+					ID:   1,
+					Name: "users",
+					Schema: map[string]any{
+						"$id":                  "https://movinglake.com/haven.schema.json",
+						"$schema":              "https://json-schema.org/draft/2020-12/schema",
+						"additionalProperties": false,
+						"properties": map[string]any{
+							"age":  map[string]any{"type": "number"},
+							"name": map[string]any{"type": "string"},
+						},
+						"required": []any{"age", "name"},
+						"title":    "users",
+						"type":     "object",
+					},
+					Version: 1,
+				},
+			},
+			wantCode: http.StatusOK,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := db.TruncateAll(); err != nil {
+				t.Fatalf("Failed to truncate db %v", err)
+			}
+			if err := db.Save(tc.dbResource, nil); err != nil {
+				t.Fatalf("Failed to save resource %v %v", tc.dbResource, err)
+			}
+			db.Errors = tc.dbErrors
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/get_resource/"+tc.request, nil)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+
+			assert.Equal(t, tc.wantCode, response.Code)
+			if tc.wantCode != http.StatusOK {
+				return
+			}
+			var resp GetResourceResponse
+			json.Unmarshal(response.Body.Bytes(), &resp)
+			ignoreTimeFields := cmpopts.IgnoreFields(ResourceResp{}, "CreatedAt", "UpdatedAt")
+			if diff := cmp.Diff(tc.want, &resp, ignoreTimeFields); diff != "" {
+				t.Errorf("GetResource(%v) got a diff: %s", tc.request, diff)
+			}
+		})
+	}
+}
+
+func TestGetResourceVersion(t *testing.T) {
+	db := wrappers.NewTestDB().(*wrappers.TestDB)
+	handler := NewHavenAPIHandler(db, nil)
+	router := gin.Default()
+	gin.SetMode(gin.TestMode)
+	handler.RegisterRoutes(router)
+	one := 1
+
+	cases := []struct {
+		name      string
+		dbErrors  map[string]error
+		dbVersion *wrappers.ResourceVersions
+		requestID int
+		want      *GetResourceVersionResponse
+		wantCode  int
+	}{
+		{
+			name: "DB failed",
+			dbErrors: map[string]error{
+				"GetResourceVersion": gorm.ErrDuplicatedKey,
+			},
+			requestID: 1,
+			wantCode:  http.StatusInternalServerError,
+		},
+		{
+			name:      "version not found",
+			requestID: 1,
+			wantCode:  http.StatusNotFound,
+		},
+		{
+			name: "valid request",
+			dbVersion: &wrappers.ResourceVersions{
+				Model:              gorm.Model{ID: 1},
+				Version:            1,
+				ResourceID:         1,
+				ReferencePayloadID: &one,
+				OldSchema:          "{\"$id\":\"https://movinglake.com/haven.schema.json\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"required\":[\"age\",\"name\"],\"title\":\"users\",\"type\":\"object\"}",
+				NewSchema:          "{\"$id\":\"https://movinglake.com/haven.schema.json\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"required\":[\"age\",\"name\"],\"title\":\"users\",\"type\":\"object\"}",
+			},
+			requestID: 1,
+			want: &GetResourceVersionResponse{
+				Version: ResourceVersionsResponse{
+					ID:               1,
+					Version:          1,
+					Resource:         1,
+					ReferencePayload: 0,
+					OldSchema: map[string]any{
+						"$id":                  "https://movinglake.com/haven.schema.json",
+						"$schema":              "https://json-schema.org/draft/2020-12/schema",
+						"additionalProperties": false,
+						"properties": map[string]any{
+							"age":  map[string]any{"type": "number"},
+							"name": map[string]any{"type": "string"},
+						},
+						"required": []any{"age", "name"},
+						"title":    "users",
+						"type":     "object",
+					},
+					NewSchema: map[string]any{
+						"$id":                  "https://movinglake.com/haven.schema.json",
+						"$schema":              "https://json-schema.org/draft/2020-12/schema",
+						"additionalProperties": false,
+						"properties": map[string]any{
+							"age":  map[string]any{"type": "number"},
+							"name": map[string]any{"type": "string"},
+						},
+						"required": []any{"age", "name"},
+						"title":    "users",
+						"type":     "object",
+					},
+				},
+			},
+			wantCode: http.StatusOK,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := db.TruncateAll(); err != nil {
+				t.Fatalf("Failed to truncate db %v", err)
+			}
+			if err := db.Save(tc.dbVersion, nil); err != nil {
+				t.Fatalf("Failed to save resource %v %v", tc.dbVersion, err)
+			}
+			db.Errors = tc.dbErrors
+
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/%d", "/api/v1/get_resource_version", tc.requestID), nil)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+
+			assert.Equal(t, tc.wantCode, response.Code)
+			if tc.wantCode != http.StatusOK {
+				return
+			}
+			var resp GetResourceVersionResponse
+			json.Unmarshal(response.Body.Bytes(), &resp)
+			if diff := cmp.Diff(tc.want, &resp); diff != "" {
+				t.Errorf("GetResourceVersion(%v) got a diff: %s", tc.requestID, diff)
+			}
+		})
+	}
 }
