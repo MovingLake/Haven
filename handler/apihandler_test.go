@@ -721,7 +721,7 @@ func TestGetResourceVersions(t *testing.T) {
 
 func TestGetReferencePayload(t *testing.T) {
 	// Create a fake DB
-	db := wrappers.NewTestDB()
+	db := wrappers.NewTestDB().(*wrappers.TestDB)
 
 	// Create a new HavenHandler with the fake DB
 	handler := NewHavenAPIHandler(db, nil)
@@ -729,20 +729,78 @@ func TestGetReferencePayload(t *testing.T) {
 	// Create a test router
 	router := gin.Default()
 	gin.SetMode(gin.TestMode)
-	router.GET("/get-reference-payload/:id", handler.getReferencePayload)
+	handler.RegisterRoutes(router)
+	cases := []struct {
+		name       string
+		dbErrors   map[string]error
+		dbResource *wrappers.Resource
+		dbPayload  *wrappers.ReferencePayloads
+		request    string
+		want       *GetReferencePayloadResponse
+		wantCode   int
+	}{
+		{
+			name: "DB failed",
+			dbErrors: map[string]error{
+				"GetReferencePayload": gorm.ErrDuplicatedKey,
+			},
+			request:  "1",
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name: "valid request",
+			dbResource: &wrappers.Resource{
+				Model:   gorm.Model{ID: 1},
+				Name:    "users",
+				Schema:  "{\"$id\":\"https://movinglake.com/haven.schema.json\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"required\":[\"age\",\"name\"],\"title\":\"users\",\"type\":\"object\"}",
+				Version: 1,
+			},
+			dbPayload: &wrappers.ReferencePayloads{
+				Model:      gorm.Model{ID: 1},
+				ResourceID: 1,
+				Payload:    "{\"name\": \"John Doe\", \"age\": 30}",
+			},
+			request: "1",
+			want: &GetReferencePayloadResponse{
+				ID:      1,
+				Payload: "{\"name\": \"John Doe\", \"age\": 30}",
+			},
+			wantCode: http.StatusOK,
+		},
+		{
+			name:     "not found",
+			request:  "1",
+			wantCode: http.StatusNotFound,
+		},
+	}
 
-	// Create a test request
-	request := httptest.NewRequest(http.MethodGet, "/get-reference-payload/1", nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := db.TruncateAll(); err != nil {
+				t.Fatalf("Failed to truncate db %v", err)
+			}
+			if err := db.Save(tc.dbResource, nil); err != nil {
+				t.Fatalf("Failed to save resource %v %v", tc.dbResource, err)
+			}
+			if err := db.Save(tc.dbPayload, nil); err != nil {
+				t.Fatalf("Failed to save payload %v %v", tc.dbPayload, err)
+			}
+			db.Errors = tc.dbErrors
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/get_reference_payload/"+tc.request, nil)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
 
-	// Perform the request
-	response := httptest.NewRecorder()
-	router.ServeHTTP(response, request)
-
-	// Assert the response
-	assert.Equal(t, http.StatusNotFound, response.Code)
-	var resp GetReferencePayloadResponse
-	json.Unmarshal(response.Body.Bytes(), &resp)
-	assert.Equal(t, "no reference payload found for id 1", resp.Error)
+			assert.Equal(t, tc.wantCode, response.Code)
+			if tc.wantCode != http.StatusOK {
+				return
+			}
+			var resp GetReferencePayloadResponse
+			json.Unmarshal(response.Body.Bytes(), &resp)
+			if diff := cmp.Diff(tc.want, &resp); diff != "" {
+				t.Errorf("GetReferencePayload(%v) got a diff: %s", tc.request, diff)
+			}
+		})
+	}
 
 }
 

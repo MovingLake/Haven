@@ -653,7 +653,8 @@ func (h *HavenAPIHandler) getReferencePayload(c *gin.Context) {
 		c.JSON(http.StatusNotFound, response)
 		return
 	}
-	response.Payload = payload
+	response.Payload = payload.Payload
+	response.ID = payload.ID
 	c.JSON(http.StatusOK, response)
 }
 
