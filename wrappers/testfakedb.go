@@ -96,6 +96,17 @@ func (d *TestDB) TruncateAll() error {
 	return nil
 }
 
+func (d *TestDB) GetResourceVersion(versionID uint, optTx *gorm.DB) (ResourceVersions, error) {
+	if e, ok := d.Errors["GetResourceVersion"]; ok && e != nil {
+		return ResourceVersions{}, e
+	}
+	r, ok := d.ResourceVersions[versionID]
+	if !ok {
+		return ResourceVersions{}, nil
+	}
+	return r, nil
+}
+
 func (d *TestDB) GetAllResources() ([]Resource, error) {
 	if e, ok := d.Errors["GetAllResources"]; ok && e != nil {
 		return nil, e

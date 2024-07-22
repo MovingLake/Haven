@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Haven Data Quality Tool</title>
+    <link href="/css/jsonTree.css" rel="stylesheet" />
+    <script src="/js/jsonTree.js"></script>
+
+    <script type="text/javascript">
+        let resource_name = "{{ .resource_name }}";
+        fetch('/api/v1/get_resource/' + resource_name)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('resource_header').textContent = data["resources"]["id"] 
+                    + ": " + data["resources"]["name"] + " -  Version: " + data["resources"]["version"];
+                var wrapper = document.getElementById('resource_json');
+                wrapper.innerHTML = "";
+                
+                // Create json-tree
+                var tree = jsonTree.create(data["resources"]["schema"], wrapper);
+                
+                // Expand all (or selected) child nodes of root (optional)
+                tree.expand(function(node) {
+                    return node.childNodes.length < 2;
+                }); 
+                fetch('/api/v1/get_resource_versions/' + data["resources"]["id"])
+                    .then(res => res.json())
+                    .then(version_data => {
+                        for(let i = version_data["versions"].length - 1; i > 0; i--) {
+                            let version = version_data["versions"][i];
+                            let option = document.createElement('option');
+                            option.textContent = version["id"] + " - " + version["version"];
+                            document.getElementById('version_select').appendChild(option);
+                        }
+                    });
+            });
+    </script>
+</head>
+<body>
+	<header>
+        <script type="text/javascript">
+
+            var compareJSON_ = (obj1, obj2, path, paths) => { 
+                for(var i in obj1) { 
+                    if(obj1.hasOwnProperty(i)) { 
+                        if(typeof obj1[i] !== typeof obj2[i]) { 
+                            paths.push(path + "." + i + " - new: " + obj1[i] + " - old: " + obj2[i]); 
+                        } else if(typeof obj1[i] === 'object') { 
+                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths); 
+                        } else if (typeof obj1[i] === 'array') {
+                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths);
+                        } else if(obj1[i] !== obj2[i]) { 
+                            paths.push(path + "." + i + " - new: " + obj1[i] + " - old: " + obj2[i]); 
+                        } 
+                    } 
+                } 
+            };
+            var compareJSON = (obj1, obj2) => { 
+                var paths = []; 
+                compareJSON_(obj1, obj2, "(root)", paths);
+                return paths; 
+              }; 
+            let renderVersion = () => {
+                let version_str = document.getElementById('version_select').value;
+                let id = version_str.split(" - ")[0];
+                let version = version_str.split(" - ")[1];
+                fetch('/api/v1/get_resource_version/' + id)
+                    .then(response => response.json())
+                    .then(data => {
+                        {
+                            var wrapper = document.getElementById('version_schema_json');
+                            wrapper.innerHTML = "";
+                            let diff = compareJSON(data["version"]["new_schema"], data["version"]["old_schema"]);
+                            
+                            // Create json-tree
+                            var tree = jsonTree.create(diff, wrapper);
+                            
+                            // Expand all (or selected) child nodes of root (optional)
+                            tree.expand(function(node) {
+                                return true;
+                            });  
+                        }
+                        
+                        // New schema.
+                        {
+                            var wrapper = document.getElementById('new_schema_json');
+                            wrapper.innerHTML = "";                            
+                            // Create json-tree
+                            var tree = jsonTree.create(data["version"]["new_schema"], wrapper);
+                        }
+
+                        // Old schema.
+                        {
+                            var wrapper = document.getElementById('old_schema_json');
+                            wrapper.innerHTML = "";                            
+                            // Create json-tree
+                            var tree = jsonTree.create(data["version"]["old_schema"], wrapper);
+                        }
+                    });
+            };
+            renderVersion();
+        </script>
+		<h1>Welcome to Haven</h1>
+		<nav>
+			<ul>
+				<li><a href="/resources">Resources</a></li>
+				<li><a href="/configuration">Configuration</a></li>
+				<li><a href="/logs">Logs</a></li>
+				<li><a href="/metrics">Metrics</a></li>
+			</ul>
+		</nav>
+	</header>
+	
+	<main>
+		<section id="resource">
+            <h3 id="resource_header"></h3>
+			<div id="resource_json"></div>
+		</section>
+
+        <section id="versions">
+            <h2>Versions</h2>
+            <select id="version_select"  onchange="renderVersion();"></select>
+            <h3>Diff</h3>
+            <div id="version_schema_json"></div>
+            <h3>New Schema</h3>
+            <div id="new_schema_json"></div>
+            <h3>Old Schema</h3>
+            <div id="old_schema_json"></div>
+
+        </section>
+		
+	</main>
+	
+	<footer>
+		<p>&copy; 2022 Haven Data Quality Tool. All rights reserved.</p>
+	</footer>
+</body>
+</html>

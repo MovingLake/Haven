@@ -44,6 +44,7 @@ type ReferencePayloads struct {
 type DB interface {
 	GetResource(resource string, optTx *gorm.DB) (*Resource, error)
 	GetAllResources() ([]Resource, error)
+	GetResourceVersion(versionID uint, optTx *gorm.DB) (ResourceVersions, error)
 	GetResourceVersions(resourceID uint) ([]ResourceVersions, error)
 	GetReferencePayload(id uint) (*ReferencePayloads, error)
 	OpenTxn() *gorm.DB
@@ -106,6 +107,12 @@ func (d *DBImpl) GetResource(resource string, optTx *gorm.DB) (*Resource, error)
 	if ret.RowsAffected == 0 {
 		return nil, nil
 	}
+	return r, ret.Error
+}
+
+func (d *DBImpl) GetResourceVersion(versionID uint, optTx *gorm.DB) (ResourceVersions, error) {
+	r := ResourceVersions{}
+	ret := d.conn.Find(&r, "id = ?", versionID)
 	return r, ret.Error
 }
 

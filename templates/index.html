@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Haven Data Quality Tool</title>
+</head>
+<body>
+	<header>
+		<h1>Welcome to Haven</h1>
+		<nav>
+			<ul>
+				<li><a href="/resources">Resources</a></li>
+				<li><a href="/configuration">Configuration</a></li>
+				<li><a href="/logs">Logs</a></li>
+				<li><a href="/metrics">Metrics</a></li>
+			</ul>
+		</nav>
+	</header>
+	
+	<main>
+		<section id="resources">
+			<h2>Resources</h2>
+			{{ range .resources }}
+				<h3><a href="resource/{{ . }}">{{ . }}</a></h3>
+			{{ end }}
+		</section>
+		
+		<section id="configuration">
+			<h2>Configuration</h2>
+			{{ .config }}
+		</section>
+		
+		<section id="logs">
+			<h2>Logs</h2>
+			{{ .logs }}
+		</section>
+		
+		<section id="metrics">
+			<h2>Metrics</h2>
+			{{ .metrics }}
+		</section>
+	</main>
+	
+	<footer>
+		<p>&copy; 2022 Haven Data Quality Tool. All rights reserved.</p>
+	</footer>
+</body>
+</html>

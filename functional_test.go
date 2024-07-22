@@ -109,7 +109,7 @@ func TestLoadTest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db, nil)
+	h := handler.NewHavenAPIHandler(db, nil)
 	h.RegisterRoutes(router)
 	payloads := loadLoadTestData(t)
 	if payloads == nil {
@@ -234,7 +234,7 @@ func TestHealth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := handler.NewHavenHandler(db, &handler.NotificationsConfig{})
+	handler := handler.NewHavenAPIHandler(db, &handler.NotificationsConfig{})
 	handler.RegisterRoutes(router)
 
 	// Create a response recorder to record the response
@@ -262,7 +262,7 @@ func TestAddPayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db, nil)
+	h := handler.NewHavenAPIHandler(db, nil)
 	h.RegisterRoutes(router)
 
 	cases := []struct {
@@ -387,7 +387,7 @@ func TestCruds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db, nil)
+	h := handler.NewHavenAPIHandler(db, nil)
 	h.RegisterRoutes(router)
 
 	recorder := httptest.NewRecorder()
@@ -541,7 +541,7 @@ func TestBadRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewHavenHandler(db, nil)
+	h := handler.NewHavenAPIHandler(db, nil)
 	h.RegisterRoutes(router)
 	db.Save(&wrappers.Resource{
 		Name:    "test",
