@@ -10,19 +10,19 @@
         fetch('/api/v1/get_resource/' + resource_name)
             .then(response => response.json())
             .then(data => {
-                document.getElementById('resource_header').textContent = data["resources"]["id"] 
-                    + ": " + data["resources"]["name"] + " -  Version: " + data["resources"]["version"];
+                document.getElementById('resource_header').textContent = data["resource"]["id"] 
+                    + ": " + data["resource"]["name"] + " -  Version: " + data["resource"]["version"];
                 var wrapper = document.getElementById('resource_json');
                 wrapper.innerHTML = "";
                 
                 // Create json-tree
-                var tree = jsonTree.create(data["resources"]["schema"], wrapper);
+                var tree = jsonTree.create(data["resource"]["schema"], wrapper);
                 
                 // Expand all (or selected) child nodes of root (optional)
                 tree.expand(function(node) {
                     return node.childNodes.length < 2;
                 }); 
-                fetch('/api/v1/get_resource_versions/' + data["resources"]["id"])
+                fetch('/api/v1/get_resource_versions/' + data["resource"]["id"])
                     .then(res => res.json())
                     .then(version_data => {
                         for(let i = version_data["versions"].length - 1; i > 0; i--) {
@@ -39,28 +39,34 @@
 	<header>
         <script type="text/javascript">
 
-            var compareJSON_ = (obj1, obj2, path, paths) => { 
+            var compareJSON_ = (obj1, obj2, path, paths, isOld) => { 
+                let first = "new";
+                let second = "old";
+                if (isOld) {
+                    first = "old";
+                    second = "new";
+                }
                 for(var i in obj1) { 
                     if(obj1.hasOwnProperty(i)) { 
                         if(typeof obj1[i] !== typeof obj2[i]) { 
-                            paths.push(path + "." + i + " - new: " + obj1[i] + " - old: " + obj2[i]); 
+                            paths.push(path + "." + i + " - " + first + ": " + obj1[i] + " - " + second + ": " + obj2[i]); 
                         } else if(typeof obj1[i] === 'object') { 
-                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths); 
+                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths, isOld); 
                         } else if (typeof obj1[i] === 'array') {
-                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths);
+                            compareJSON_(obj1[i], obj2[i], path + "." + i, paths, isOld);
                         } else if(obj1[i] !== obj2[i]) { 
-                            paths.push(path + "." + i + " - new: " + obj1[i] + " - old: " + obj2[i]); 
+                            paths.push(path + "." + i + " - " + first + ": " + obj1[i] + " - " + second + ": " + obj2[i]); 
                         } 
                     } 
                 } 
             };
-            var compareJSON = (obj1, obj2) => { 
+            var compareJSON = (obj1, obj2, isOld) => { 
                 var paths = []; 
-                compareJSON_(obj1, obj2, "(root)", paths);
+                compareJSON_(obj1, obj2, "(root)", paths, isOld);
                 return paths; 
               }; 
             let renderVersion = () => {
-                let version_str = document.getElementById('version_select').value;
+                let version_str = document.getElementById('version_select').textContent;
                 let id = version_str.split(" - ")[0];
                 let version = version_str.split(" - ")[1];
                 fetch('/api/v1/get_resource_version/' + id)
@@ -69,7 +75,9 @@
                         {
                             var wrapper = document.getElementById('version_schema_json');
                             wrapper.innerHTML = "";
-                            let diff = compareJSON(data["version"]["new_schema"], data["version"]["old_schema"]);
+                            let diff = compareJSON(data["version"]["new_schema"], data["version"]["old_schema"], false);
+                            let diff2 = compareJSON(data["version"]["old_schema"], data["version"]["new_schema"], true);
+                            diff = diff.concat(diff2);
                             
                             // Create json-tree
                             var tree = jsonTree.create(diff, wrapper);
@@ -118,7 +126,7 @@
 
         <section id="versions">
             <h2>Versions</h2>
-            <select id="version_select"  onchange="renderVersion();"></select>
+            <select id="version_select"  onchange="renderVersion();" onfocus="this.selectedIndex = -1;"></select>
             <h3>Diff</h3>
             <div id="version_schema_json"></div>
             <h3>New Schema</h3>
